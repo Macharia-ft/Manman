@@ -523,27 +523,28 @@ const savePersonalInfo = async (req, res) => {
     let photoUrl = null;
     let videoUrl = null;
 
-    if (req.files) {
-      if (req.files.photo) {
-        const photoResult = await cloudinary.uploader.upload(req.files.photo[0].path, {
-          folder: "takeyours/personal_photos",
-          resource_type: "image",
-        });
-        photoUrl = photoResult.secure_url;
-        fs.unlinkSync(req.files.photo[0].path);
-      }
-
-      if (req.files.video) {
-        const videoResult = await cloudinary.uploader.upload(req.files.video[0].path, {
-          folder: "takeyours/personal_videos",
-          resource_type: "video",
-        });
-        videoUrl = videoResult.secure_url;
-        fs.unlinkSync(req.files.video[0].path);
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        if (file.fieldname === 'photo') {
+          const photoResult = await cloudinary.uploader.upload(file.path, {
+            folder: "takeyours/personal_photos",
+            resource_type: "image",
+          });
+          photoUrl = photoResult.secure_url;
+          fs.unlinkSync(file.path);
+        } else if (file.fieldname === 'video') {
+          const videoResult = await cloudinary.uploader.upload(file.path, {
+            folder: "takeyours/personal_videos",
+            resource_type: "video",
+          });
+          videoUrl = videoResult.secure_url;
+          fs.unlinkSync(file.path);
+        }
       }
     }
 
     // Extract personal information from request body
+    // When using multer, form fields are in req.body and files are in req.files
     const {
       full_name,
       dob,
