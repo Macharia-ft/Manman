@@ -5,9 +5,7 @@ const userId = new URLSearchParams(window.location.search).get("id");
 const userInfoContainer = document.getElementById("userInfo");
 const adminMessageInput = document.getElementById("adminMessage");
 const approveBtn = document.getElementById("approveBtn");
-const disapproveAllBtn = document.getElementById("disapproveAllBtn");
-const disapproveIdentityBtn = document.getElementById("disapproveIdentityBtn");
-const disapprovePersonalBtn = document.getElementById("disapprovePersonalBtn");
+const disapproveBtn = document.getElementById("disapproveBtn");
 const statusText = document.getElementById("updateStatusText");
 
 if (!token) {
@@ -112,19 +110,9 @@ async function triggerReset(endpoint) {
 
 approveBtn.addEventListener("click", () => updateStatus("approved"));
 
-disapproveAllBtn.addEventListener("click", async () => {
+disapproveBtn.addEventListener("click", async () => {
   await updateStatus("disapproved");
   await triggerReset("reset-submission");
-});
-
-disapproveIdentityBtn.addEventListener("click", async () => {
-  await updateStatus("disapproved");
-  await triggerReset("reset-identity");
-});
-
-disapprovePersonalBtn.addEventListener("click", async () => {
-  await updateStatus("disapproved");
-  await triggerReset("reset-personal");
 });
 
 loadUser();

@@ -1,10 +1,20 @@
 
 const { createClient } = require("@supabase/supabase-js");
 const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Email transporter setup
+const transporter = nodemailer.createTransporter({
+  service: "gmail",
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_PASS,
+  },
+});
 
 // Admin login
 exports.adminLogin = async (req, res) => {
@@ -85,6 +95,44 @@ exports.updateUserStatus = async (req, res) => {
 
     if (!data || data.length === 0) {
       return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Send email notification
+    const user = data[0];
+    if (user.email) {
+      try {
+        const subject = status === "approved" ? "Profile Approved - Takeyours" : "Profile Update - Takeyours";
+        const loginLink = `${process.env.FRONTEND_URL || 'http://localhost:5000'}/login.html`;
+        
+        let emailContent;
+        if (status === "approved") {
+          emailContent = `
+            <h2>Congratulations! Your profile has been approved.</h2>
+            <p>You can now access your dashboard and start using Takeyours.</p>
+            <p><a href="${loginLink}" style="background-color: #2ecc71; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Login to Dashboard</a></p>
+          `;
+        } else {
+          emailContent = `
+            <h2>Profile Update Required</h2>
+            <p>Your profile submission needs some updates.</p>
+            ${adminMessage ? `<p><strong>Admin Message:</strong> ${adminMessage}</p>` : ''}
+            <p>Please login and resubmit your information.</p>
+            <p><a href="${loginLink}" style="background-color: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Login to Update</a></p>
+          `;
+        }
+
+        await transporter.sendMail({
+          from: process.env.GMAIL_USER,
+          to: user.email,
+          subject: subject,
+          html: emailContent,
+        });
+
+        console.log(`📧 Email sent to ${user.email} for status: ${status}`);
+      } catch (emailError) {
+        console.error("Email sending error:", emailError.message);
+        // Don't fail the request if email fails
+      }
     }
 
     res.json({ success: true, message: "User status updated successfully" });

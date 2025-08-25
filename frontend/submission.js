@@ -62,6 +62,10 @@ uploadAgainBtn.addEventListener("click", async () => {
     return;
   }
 
+  // Show spinner initially
+  spinnerOverlay.style.display = "flex";
+  mainContent.style.display = "none";
+
   try {
     const progressRes = await fetch(`${config.API_BASE_URL}/api/user/progress`, {
       headers: { Authorization: `Bearer ${token}` }
@@ -100,13 +104,16 @@ uploadAgainBtn.addEventListener("click", async () => {
       reviewMessage.textContent = "❌ Your submission was disapproved by admin.";
       uploadAgainBtn.style.display = "inline-block";
     } else {
-      reviewMessage.textContent = "⏳ Your profile is under review. Please wait for admin approval.";
+      reviewMessage.textContent = "⏳ Your profile is under review, please wait for approval and be aware it can take up to 24 hours.";
       uploadAgainBtn.style.display = "none";
     }
 
+    // Hide spinner and show content
+    spinnerOverlay.style.display = "none";
     mainContent.style.display = "block";
   } catch (err) {
     console.error("❌ Submission page error:", err.message);
+    spinnerOverlay.style.display = "none";
     window.location.href = "login.html";
   }
 })();
