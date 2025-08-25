@@ -3,16 +3,16 @@ const express = require("express");
 const router = express.Router();
 const adminController = require("../controllers/adminController");
 
-// ✅ Admin login
+// Admin login
 router.post("/admin/login", adminController.adminLogin);
 
-// ✅ Get all users
+// Get all users (admin only)
 router.get("/admin/users", adminController.getAllUsers);
 
-// ✅ Get a single user's full info
-router.get("/admin/user/:id", adminController.getUserById);
+// Update user status (admin only)
+router.put("/admin/users/status", adminController.updateUserStatus);
 
-// ✅ Approve/disapprove user
-router.post("/admin/user/:id/status", adminController.updateUserStatus);
+// Get user by ID (admin only)
+router.get("/admin/users/:id", adminController.getUserById);
 
 module.exports = router;

@@ -1,6 +1,10 @@
 
 const jwt = require("jsonwebtoken");
-const db = require("../db");
+const { createClient } = require("@supabase/supabase-js");
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 exports.getUserStatus = async (req, res) => {
   try {
@@ -8,13 +12,22 @@ exports.getUserStatus = async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const email = decoded.email;
 
-    const result = await db.query("SELECT status, admin_message FROM users WHERE email = $1", [email]);
+    const { data, error } = await supabase
+      .from('users')
+      .select('status, admin_message')
+      .eq('email', email)
+      .single();
 
-    if (result.rows.length === 0) {
+    if (error) {
+      console.error("Status check error:", error.message);
+      return res.status(500).json({ message: "Server error" });
+    }
+
+    if (!data) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const { status, admin_message } = result.rows[0];
+    const { status, admin_message } = data;
 
     return res.json({ status, adminMessage: admin_message });
   } catch (err) {
