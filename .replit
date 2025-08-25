@@ -1,11 +1,11 @@
 modules = ["nodejs-20", "web"]
-run = "node index.js"
+run = "node backend/db/index.js"
 
 [nix]
 channel = "stable-25_05"
 
 [deployment]
-run = ["sh", "-c", "node backend/server.js"]
+run = ["sh", "-c", "node backend/db/index.js"]
 
 [workflows]
 runButton = "Start Server"
