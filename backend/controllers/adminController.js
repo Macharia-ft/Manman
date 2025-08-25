@@ -8,7 +8,7 @@ const supabaseAnonKey = process.env.ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Email transporter setup
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.GMAIL_USER,
