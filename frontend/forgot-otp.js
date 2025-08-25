@@ -67,7 +67,11 @@ document.getElementById("resendBtn").addEventListener("click", async () => {
     const data = await res.json();
 
     if (res.ok) {
-      msg.innerText = "✅ OTP resent. Please check your email.";
+      msg.classList.add("ty-success");
+      msg.innerText = "✅ Password reset successfully! Please login with your new password to continue.";
+      setTimeout(() => {
+        window.location.href = "login.html";
+      }, 2000);
     } else {
       msg.innerText = `❌ ${data.error || "Could not resend OTP."}`;
     }
