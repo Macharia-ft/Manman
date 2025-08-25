@@ -1,12 +1,8 @@
 
 const express = require("express");
-const userController = require("../controllers/userController");
 const router = express.Router();
+const { savePreferences } = require("../controllers/userController");
 
-// ✅ Save Match Preferences
-router.post("/user/preferences", (req, res) => userController.savePreferences(req, res));
-
-// ✅ Get Smart Session Progress
-router.get("/user/progress", (req, res) => userController.getUserProgress(req, res));
+router.post("/user/preferences", savePreferences);
 
 module.exports = router;

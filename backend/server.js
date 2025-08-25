@@ -3,7 +3,6 @@ require("dotenv").config({ path: "./backend/.env" });
 const express = require("express");
 const cors = require("cors");
 const { createClient } = require("@supabase/supabase-js");
-const path = require("path");
 
 
 // Routes
@@ -131,7 +130,8 @@ function calculateMatchScore(user, currentUser) {
   // Check each attribute and match preferences with personal info
   score += compareAttribute(user.gender, currentUser.pref_gender);
   score += compareAttribute(user.dob, currentUser.pref_age_min, currentUser.pref_age_max);
-  score += compareAttribute(user.country_of_birth, currentUser.pref_country);
+  score += compareAttribute(user.country_of_birth, currentUser.pref_country_of_birth);
+  score += compareAttribute(user.country_of_residence, currentUser.pref_country_of_residence);
   score += compareAttribute(user.languages, currentUser.pref_languages);
   score += compareAttribute(user.religion, currentUser.pref_religion);
   score += compareAttribute(user.height, currentUser.pref_height);
@@ -181,7 +181,7 @@ app.get('/api/user/profile-photo/:email', async (req, res) => {
     const currentUser = await getUserById(currentUserId);
     
     // Check if the user has a profile photo URL
-    const profilePhotoUrl = currentUser.profile_photo_url;
+    const profilePhotoUrl = currentUser.photo_url || currentUser.profile_photo_url;
 
     if (!profilePhotoUrl) {
       return res.status(404).json({
@@ -409,7 +409,7 @@ app.get('/api/user', async (req, res) => {
     }
 
     // Filter out sensitive information like email, password, and ID numbers
-    const { password, email, national_id_number, ...publicData } = data;
+    const { password, email, national_id_number, id_front_url, id_back_url, liveness_video_url, ...publicData } = data;
 
     // Return public data (exclude sensitive information)
     res.json(publicData);
