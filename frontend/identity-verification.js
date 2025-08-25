@@ -172,6 +172,20 @@ submitBtn.onclick = async () => {
     return;
   }
 
+  // Extract email from token
+  let userEmail;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    userEmail = payload.email;
+    if (!userEmail) {
+      statusText.textContent = "Invalid token. Please log in again.";
+      return;
+    }
+  } catch (e) {
+    statusText.textContent = "Invalid token. Please log in again.";
+    return;
+  }
+
   statusText.textContent = "Uploading...";
   spinner.style.display = "block";
   submitBtn.disabled = true;
@@ -180,6 +194,7 @@ submitBtn.onclick = async () => {
   formData.append("idFront", front);
   formData.append("idBack", back);
   formData.append("video", videoBlob, `liveness_${Date.now()}.webm`);
+  formData.append("userEmail", userEmail);
 
   try {
     const response = await fetch(`${config.API_BASE_URL}/api/upload-identity`, {

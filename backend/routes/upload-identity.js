@@ -1,9 +1,11 @@
 
+require("dotenv").config({ path: "./backend/.env" });
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const jwt = require("jsonwebtoken");
 const cloudinary = require("cloudinary").v2;
 const { createClient } = require("@supabase/supabase-js");
 
@@ -83,13 +85,25 @@ router.post("/upload-identity", upload.fields([
     return res.status(401).json({ success: false, message: "Missing token" });
   }
 
-  const { idFront, idBack, video } = req.files;
-  const { userEmail } = req.body;
+  const token = authHeader.split(" ")[1];
+  let decoded;
 
-  if (!userEmail || (!idFront && !idBack && !video)) {
+  try {
+    const jwt = require("jsonwebtoken");
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("🔐 Authenticated:", decoded.email);
+  } catch (err) {
+    console.error("❌ Token verification failed:", err.message);
+    return res.status(401).json({ success: false, message: "Invalid token" });
+  }
+
+  const userEmail = decoded.email;
+  const { idFront, idBack, video } = req.files;
+
+  if (!idFront && !idBack && !video) {
     return res.status(400).json({
       success: false,
-      message: "Missing user email or identity files.",
+      message: "Missing identity files.",
     });
   }
 
