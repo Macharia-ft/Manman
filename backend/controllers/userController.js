@@ -254,4 +254,195 @@ const savePersonalInfo = async (req, res) => {
   }
 };
 
-module.exports = { uploadIdentity, savePersonalInfo };
+const savePreferences = async (req, res) => {
+  console.log("📦 Incoming /api/user/preferences request...");
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ success: false, message: "Missing token" });
+  }
+
+  const token = authHeader.split(" ")[1];
+  let decoded;
+
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("🔐 Authenticated:", decoded.email);
+  } catch (err) {
+    console.error("❌ Token verification failed:", err.message);
+    return res.status(401).json({ success: false, message: "Invalid token" });
+  }
+
+  const userEmail = decoded.email;
+
+  try {
+    // Check if user exists in Supabase
+    const { data: existingUser, error: checkError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', userEmail)
+      .single();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error("🔥 Save Preferences Error:", checkError);
+      return res.status(500).json({
+        success: false,
+        message: checkError.message
+      });
+    }
+
+    if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    // Extract preferences from request body
+    const {
+      pref_gender,
+      pref_age_min,
+      pref_age_max,
+      pref_country_of_birth,
+      pref_country_of_residence,
+      pref_county_of_residence,
+      pref_country,
+      pref_languages,
+      pref_religion,
+      pref_religion_importance,
+      pref_height,
+      pref_weight,
+      pref_body_type,
+      pref_skin_color,
+      pref_ethnicity,
+      pref_diet,
+      pref_smoking,
+      pref_drinking,
+      pref_exercise,
+      pref_pets,
+      pref_children,
+      pref_living_situation,
+      pref_willing_to_relocate,
+      pref_relationship_type
+    } = req.body;
+
+    // Update user with preferences
+    const updateData = {
+      current_step: 'submission',
+      pref_gender,
+      pref_age_min,
+      pref_age_max,
+      pref_country_of_birth,
+      pref_country_of_residence,
+      pref_county_of_residence,
+      pref_country,
+      pref_languages,
+      pref_religion,
+      pref_religion_importance,
+      pref_height,
+      pref_weight,
+      pref_body_type,
+      pref_skin_color,
+      pref_ethnicity,
+      pref_diet,
+      pref_smoking,
+      pref_drinking,
+      pref_exercise,
+      pref_pets,
+      pref_children,
+      pref_living_situation,
+      pref_willing_to_relocate,
+      pref_relationship_type
+    };
+
+    const { data, error } = await supabase
+      .from('users')
+      .update(updateData)
+      .eq('email', userEmail)
+      .select();
+
+    if (error) {
+      console.error("🔥 Save Preferences Error:", error);
+      return res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+
+    console.log("✅ Preferences saved successfully for:", userEmail);
+    res.status(200).json({
+      success: true,
+      message: "Preferences saved successfully",
+      current_step: 'submission'
+    });
+
+  } catch (err) {
+    console.error("🔥 Save Preferences Error:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Server error during preferences save"
+    });
+  }
+};
+
+const getUserProgress = async (req, res) => {
+  console.log("📦 Incoming /api/user/progress request...");
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ success: false, message: "Missing token" });
+  }
+
+  const token = authHeader.split(" ")[1];
+  let decoded;
+
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("🔐 Authenticated:", decoded.email);
+  } catch (err) {
+    console.error("❌ Token verification failed:", err.message);
+    return res.status(401).json({ success: false, message: "Invalid token" });
+  }
+
+  const userEmail = decoded.email;
+
+  try {
+    // Get user progress from Supabase
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('current_step, status')
+      .eq('email', userEmail)
+      .single();
+
+    if (error) {
+      console.error("🔥 Get Progress Error:", error);
+      return res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    console.log("✅ Progress retrieved for:", userEmail, "Step:", user.current_step, "Status:", user.status);
+    res.status(200).json({
+      success: true,
+      current_step: user.current_step || 'identity',
+      status: user.status || 'pending'
+    });
+
+  } catch (err) {
+    console.error("🔥 Get Progress Error:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Server error during progress retrieval"
+    });
+  }
+};
+
+module.exports = { uploadIdentity, savePersonalInfo, savePreferences, getUserProgress };
