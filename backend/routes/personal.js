@@ -30,7 +30,7 @@ router.post(
     { name: "photo", maxCount: 1 },
     { name: "video", maxCount: 1 },
   ]),
-  userController.savePersonalInfo
+  (req, res) => userController.savePersonalInfo(req, res)
 );
 
 module.exports = router;

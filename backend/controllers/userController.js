@@ -8,6 +8,12 @@ const { createClient } = require("@supabase/supabase-js");
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const { createClient } = require("@supabase/supabase-js");
+
+// Initialize Supabase client
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Configure Cloudinary
 cloudinary.config({
