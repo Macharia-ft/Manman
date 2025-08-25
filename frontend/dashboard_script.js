@@ -3,16 +3,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const container = document.getElementById('user-container');
   const filterButtons = document.querySelectorAll('.filters button');
 
-  // Make local storage user-specific to prevent conflicts when multiple users use same device
-  const userStorageKey = (key) => `${key}_${currentUserEmail}`;
-  
-  let allProfiles = JSON.parse(localStorage.getItem(userStorageKey("allProfiles"))) || [];
-  let selectedProfiles = JSON.parse(localStorage.getItem(userStorageKey("selectedProfiles"))) || [];
-  let selectedYouProfiles = JSON.parse(localStorage.getItem(userStorageKey("selectedYouProfiles"))) || [];
-  let removedProfiles = JSON.parse(localStorage.getItem(userStorageKey("removedProfiles"))) || [];
-  let acceptedProfiles = JSON.parse(localStorage.getItem(userStorageKey("acceptedProfiles"))) || [];
-  let activeSection = "all";
-
   const token = localStorage.getItem("token");
   if (!token) {
     container.innerHTML = "<p>Please log in first!</p>";
@@ -26,6 +16,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     container.innerHTML = "<p>Unable to retrieve user info from token.</p>";
     return;
   }
+
+  // Make local storage user-specific to prevent conflicts when multiple users use same device
+  const userStorageKey = (key) => `${key}_${currentUserEmail}`;
+  
+  let allProfiles = JSON.parse(localStorage.getItem(userStorageKey("allProfiles"))) || [];
+  let selectedProfiles = JSON.parse(localStorage.getItem(userStorageKey("selectedProfiles"))) || [];
+  let selectedYouProfiles = JSON.parse(localStorage.getItem(userStorageKey("selectedYouProfiles"))) || [];
+  let removedProfiles = JSON.parse(localStorage.getItem(userStorageKey("removedProfiles"))) || [];
+  let acceptedProfiles = JSON.parse(localStorage.getItem(userStorageKey("acceptedProfiles"))) || [];
+  let activeSection = "all";
 
   try {
     const response = await fetch(`${config.API_BASE_URL}/api/user/profile-photo/${currentUserEmail}`, {
