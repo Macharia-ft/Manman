@@ -24,8 +24,8 @@ app.use(cors({
 }));
 
 // ✅ Handle large requests (videos + images)
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+app.use(express.json({ limit: "200mb" }));
+app.use(express.urlencoded({ extended: true, limit: "200mb" }));
 
 // ✅ Supabase Client Initialization
 const supabaseUrl = process.env.SUPABASE_URL;
