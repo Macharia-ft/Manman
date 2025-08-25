@@ -1,4 +1,3 @@
-
 require("dotenv").config({ path: "./backend/.env" });
 const express = require("express");
 const cors = require("cors");
@@ -18,7 +17,7 @@ const app = express();
 
 // ✅ CORS setup
 app.use(cors({
-  origin: '*', 
+  origin: '*',
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -80,25 +79,75 @@ async function fetchUsers(currentUserId) {
   return data;
 }
 
+// Function to fetch users with pre-filtering based on preferences
+async function fetchUsersWithPreFiltering(currentUserId, currentUser) {
+  let query = supabase
+    .from('users')
+    .select('*')
+    .neq('id', currentUserId)
+    .eq('status', 'approved');
+
+  // Filter by preferred gender
+  if (currentUser.pref_gender) {
+    query = query.eq('gender', currentUser.pref_gender);
+  }
+
+  // Filter by preferred county (country_of_residence)
+  if (currentUser.pref_country_of_residence) {
+    query = query.eq('country_of_residence', currentUser.pref_country_of_residence);
+  }
+
+  // Filter by age range
+  if (currentUser.pref_age_min && currentUser.pref_age_max) {
+    // Calculate age from date of birth
+    query = query.gte('dob', new Date(new Date().getFullYear() - currentUser.pref_age_max, new Date().getMonth(), new Date().getDate()).toISOString())
+                 .lte('dob', new Date(new Date().getFullYear() - currentUser.pref_age_min, new Date().getMonth(), new Date().getDate()).toISOString());
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("Error fetching users with pre-filtering:", error);
+    throw new Error(`Supabase Query Error: ${error.message}`);
+  }
+
+  return data || [];
+}
+
 // ✅ Endpoint to fetch users and calculate match score
 app.get('/api/users/:email', async (req, res) => {
   const currentUserEmail = req.params.email;  // Current logged-in user email
 
   try {
     // Fetch the user ID based on the email
-    const currentUserId = await getUserIdByEmail(currentUserEmail);  
-    const users = await fetchUsers(currentUserId);  // Fetch users excluding the current user by ID
+    const currentUserId = await getUserIdByEmail(currentUserEmail);
     const currentUser = await getUserById(currentUserId);  // Fetch the logged-in user's full profile
 
-    const matchedUsers = users.map(user => {
-      const matchScore = calculateMatchScore(user, currentUser);  // Calculate match score with currentUser
+    // Pre-filter users based on key preferences before fetching all users
+    const preFilteredUsers = await fetchUsersWithPreFiltering(currentUserId, currentUser);
+
+    if (preFilteredUsers.length === 0) {
+      return res.json({
+        users: [],
+        message: "No users found matching your basic preferences. Consider adjusting your gender, location, or age range preferences.",
+        shouldAdjustPreferences: true
+      });
+    }
+
+    // Calculate match scores only for pre-filtered users
+    const matchedUsers = preFilteredUsers.map(user => {
+      const matchScore = calculateMatchScore(user, currentUser);
       return { ...user, matchScore };
     });
 
     // Sort users by match score in descending order
     matchedUsers.sort((a, b) => b.matchScore - a.matchScore);
 
-    res.json(matchedUsers);
+    res.json({
+      users: matchedUsers,
+      message: null,
+      shouldAdjustPreferences: false
+    });
   } catch (error) {
     console.error("Error occurred:", error.message);
     res.status(500).json({
@@ -176,10 +225,10 @@ app.get('/api/user/profile-photo/:email', async (req, res) => {
   try {
     // Fetch the user ID based on the email
     const currentUserId = await getUserIdByEmail(currentUserEmail);
-    
+
     // Fetch the current user's profile data by ID
     const currentUser = await getUserById(currentUserId);
-    
+
     // Check if the user has a profile photo URL
     const profilePhotoUrl = currentUser.photo_url || currentUser.profile_photo_url;
 
@@ -398,7 +447,7 @@ app.get('/api/user', async (req, res) => {
       .select('*')
       .eq('id', userId)
       .single();  // Fetch a single record
-    
+
     if (error) {
       console.error('Error fetching user:', error);
       return res.status(500).json({ message: 'Error fetching user data' });

@@ -3,11 +3,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const container = document.getElementById('user-container');
   const filterButtons = document.querySelectorAll('.filters button');
 
-  let allProfiles = JSON.parse(localStorage.getItem("allProfiles")) || [];
-  let selectedProfiles = JSON.parse(localStorage.getItem("selectedProfiles")) || [];
-  let selectedYouProfiles = JSON.parse(localStorage.getItem("selectedYouProfiles")) || [];
-  let removedProfiles = JSON.parse(localStorage.getItem("removedProfiles")) || [];
-  let acceptedProfiles = JSON.parse(localStorage.getItem("acceptedProfiles")) || [];
+  // Make local storage user-specific to prevent conflicts when multiple users use same device
+  const userStorageKey = (key) => `${key}_${currentUserEmail}`;
+  
+  let allProfiles = JSON.parse(localStorage.getItem(userStorageKey("allProfiles"))) || [];
+  let selectedProfiles = JSON.parse(localStorage.getItem(userStorageKey("selectedProfiles"))) || [];
+  let selectedYouProfiles = JSON.parse(localStorage.getItem(userStorageKey("selectedYouProfiles"))) || [];
+  let removedProfiles = JSON.parse(localStorage.getItem(userStorageKey("removedProfiles"))) || [];
+  let acceptedProfiles = JSON.parse(localStorage.getItem(userStorageKey("acceptedProfiles"))) || [];
   let activeSection = "all";
 
   const token = localStorage.getItem("token");
@@ -54,7 +57,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       throw new Error(errorData.message);
     }
 
-    allProfiles = await userResponse.json();
+    const responseData = await userResponse.json();
+    
+    // Handle new response format with pre-filtering
+    if (responseData.shouldAdjustPreferences) {
+      container.innerHTML = `
+        <div class="no-matches-message">
+          <h3>No matches found</h3>
+          <p>${responseData.message}</p>
+          <button onclick="window.location.href='preferences.html'" class="adjust-preferences-btn">
+            Adjust Preferences
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    allProfiles = responseData.users || responseData;
     allProfiles = allProfiles.filter(profile => 
       !selectedProfiles.some(selected => selected.id === profile.id) &&
       !removedProfiles.some(removed => removed.id === profile.id) &&
@@ -68,7 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (selectedYouResponse.ok) {
       selectedYouProfiles = await selectedYouResponse.json();
-      localStorage.setItem("selectedYouProfiles", JSON.stringify(selectedYouProfiles));
+      localStorage.setItem(userStorageKey("selectedYouProfiles"), JSON.stringify(selectedYouProfiles));
     } else {
       console.error("Error fetching selected-you profiles.");
     }
@@ -269,11 +288,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function updateLocalStorage() {
-    localStorage.setItem("allProfiles", JSON.stringify(allProfiles));
-    localStorage.setItem("selectedProfiles", JSON.stringify(selectedProfiles));
-    localStorage.setItem("selectedYouProfiles", JSON.stringify(selectedYouProfiles));
-    localStorage.setItem("removedProfiles", JSON.stringify(removedProfiles));
-    localStorage.setItem("acceptedProfiles", JSON.stringify(acceptedProfiles));
+    localStorage.setItem(userStorageKey("allProfiles"), JSON.stringify(allProfiles));
+    localStorage.setItem(userStorageKey("selectedProfiles"), JSON.stringify(selectedProfiles));
+    localStorage.setItem(userStorageKey("selectedYouProfiles"), JSON.stringify(selectedYouProfiles));
+    localStorage.setItem(userStorageKey("removedProfiles"), JSON.stringify(removedProfiles));
+    localStorage.setItem(userStorageKey("acceptedProfiles"), JSON.stringify(acceptedProfiles));
   }
 
   function getCurrentUserFromToken() {
