@@ -445,4 +445,209 @@ const getUserProgress = async (req, res) => {
   }
 };
 
-module.exports = { uploadIdentity, savePersonalInfo, savePreferences, getUserProgress };
+const resetUserSubmission = async (req, res) => {
+  console.log("📦 Incoming /api/user/reset-submission request...");
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ success: false, message: "Missing token" });
+  }
+
+  const token = authHeader.split(" ")[1];
+  let decoded;
+
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("🔐 Authenticated:", decoded.email);
+  } catch (err) {
+    console.error("❌ Token verification failed:", err.message);
+    return res.status(401).json({ success: false, message: "Invalid token" });
+  }
+
+  const userEmail = decoded.email;
+
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        current_step: 'identity',
+        status: 'pending',
+        admin_message: null,
+        full_name: null,
+        dob: null,
+        country_of_birth: null,
+        city_of_birth: null,
+        gender: null,
+        occupation: null,
+        education_level: null,
+        marital_status: null,
+        children_count: null,
+        hobbies: null,
+        interests: null,
+        bio: null,
+        profile_photo_url: null,
+        profile_video_url: null,
+        national_id_url: null,
+        selfie_url: null
+      })
+      .eq('email', userEmail)
+      .select();
+
+    if (error) {
+      console.error("🔥 Reset Submission Error:", error);
+      return res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+
+    console.log("✅ User submission reset successfully for:", userEmail);
+    res.status(200).json({
+      success: true,
+      message: "User submission reset successfully"
+    });
+
+  } catch (err) {
+    console.error("🔥 Reset Submission Error:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Server error during submission reset"
+    });
+  }
+};
+
+const resetIdentityOnly = async (req, res) => {
+  console.log("📦 Incoming /api/user/reset-identity request...");
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ success: false, message: "Missing token" });
+  }
+
+  const token = authHeader.split(" ")[1];
+  let decoded;
+
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("🔐 Authenticated:", decoded.email);
+  } catch (err) {
+    console.error("❌ Token verification failed:", err.message);
+    return res.status(401).json({ success: false, message: "Invalid token" });
+  }
+
+  const userEmail = decoded.email;
+
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        current_step: 'identity',
+        status: 'pending',
+        admin_message: null,
+        national_id_url: null,
+        selfie_url: null
+      })
+      .eq('email', userEmail)
+      .select();
+
+    if (error) {
+      console.error("🔥 Reset Identity Error:", error);
+      return res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+
+    console.log("✅ Identity reset successfully for:", userEmail);
+    res.status(200).json({
+      success: true,
+      message: "Identity reset successfully"
+    });
+
+  } catch (err) {
+    console.error("🔥 Reset Identity Error:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Server error during identity reset"
+    });
+  }
+};
+
+const resetPersonalOnly = async (req, res) => {
+  console.log("📦 Incoming /api/user/reset-personal request...");
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ success: false, message: "Missing token" });
+  }
+
+  const token = authHeader.split(" ")[1];
+  let decoded;
+
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("🔐 Authenticated:", decoded.email);
+  } catch (err) {
+    console.error("❌ Token verification failed:", err.message);
+    return res.status(401).json({ success: false, message: "Invalid token" });
+  }
+
+  const userEmail = decoded.email;
+
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        current_step: 'personal',
+        status: 'pending',
+        admin_message: null,
+        full_name: null,
+        dob: null,
+        country_of_birth: null,
+        city_of_birth: null,
+        gender: null,
+        occupation: null,
+        education_level: null,
+        marital_status: null,
+        children_count: null,
+        hobbies: null,
+        interests: null,
+        bio: null,
+        profile_photo_url: null,
+        profile_video_url: null
+      })
+      .eq('email', userEmail)
+      .select();
+
+    if (error) {
+      console.error("🔥 Reset Personal Error:", error);
+      return res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+
+    console.log("✅ Personal info reset successfully for:", userEmail);
+    res.status(200).json({
+      success: true,
+      message: "Personal info reset successfully"
+    });
+
+  } catch (err) {
+    console.error("🔥 Reset Personal Error:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Server error during personal reset"
+    });
+  }
+};
+
+module.exports = {
+  uploadIdentity,
+  savePersonalInfo,
+  resetUserSubmission,
+  resetIdentityOnly,
+  resetPersonalOnly,
+  getUserProgress,
+  savePreferences
+};
