@@ -1,13 +1,45 @@
+
 const express = require("express");
 const router = express.Router();
-const { uploadIdentity } = require("../controllers/userController");
-
-// Updated to include Supabase client and connection testing
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
+const cloudinary = require("cloudinary").v2;
 const { createClient } = require("@supabase/supabase-js");
+
+// Configure multer for file uploads
+const upload = multer({
+  dest: path.join(__dirname, "../temp"),
+  limits: { fileSize: 200 * 1024 * 1024 }, // 200MB limit
+});
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Helper function to upload to Cloudinary
+async function uploadToCloudinary(filePath, folder) {
+  try {
+    const result = await cloudinary.uploader.upload(filePath, {
+      folder: `takeyours/${folder}`,
+      resource_type: "auto",
+    });
+    return {
+      url: result.secure_url,
+      public_id: result.public_id
+    };
+  } catch (error) {
+    console.error("Cloudinary upload error:", error);
+    throw error;
+  }
+}
 
 // Test Supabase connection
 async function testSupabaseConnection() {
@@ -29,7 +61,7 @@ async function testSupabaseConnection() {
   }
 }
 
-// Updated to include connection test before processing uploads
+// Upload identity route
 router.post("/upload-identity", upload.fields([
   { name: "idFront", maxCount: 1 },
   { name: "idBack", maxCount: 1 },
