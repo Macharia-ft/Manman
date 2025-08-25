@@ -101,9 +101,16 @@ module.exports = {
         idBackUrl = idBackResult.secure_url;
       }
 
+      // Validate required identity fields
+      if (!nationalIdNumber || (!photoUrl && !photo) || (!idFrontUrl && !idFront)) {
+        return res.status(400).json({
+          success: false,
+          message: "Missing required identity verification data"
+        });
+      }
+
       // Update user record with uploaded files and national ID
       const updateData = {
-        current_step: 'personal',
         updated_at: new Date().toISOString()
       };
 
@@ -112,6 +119,11 @@ module.exports = {
       if (idFrontUrl) updateData.id_front_url = idFrontUrl;
       if (idBackUrl) updateData.id_back_url = idBackUrl;
       if (nationalIdNumber) updateData.national_id_number = nationalIdNumber;
+
+      // Only update current_step if identity verification is complete
+      if (nationalIdNumber && (photoUrl || photo) && (idFrontUrl || idFront)) {
+        updateData.current_step = 'personal';
+      }
 
       const { error: updateError } = await supabase
         .from('users')
@@ -560,24 +572,55 @@ const savePersonalInfo = async (req, res) => {
       bio
     } = req.body;
 
+    // Validate required fields before updating current_step
+    if (!full_name || !dob || !gender || !country_of_birth) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required personal information fields"
+      });
+    }
+
     // Update user with personal information
     const updateData = {
-      current_step: 'preferences',
       full_name,
       dob,
       country_of_birth,
-      city_of_birth,
-      gender,
+      country_of_residence,
+      county_of_residence,
+      city: city_of_birth,
+      willing_to_relocate,
+      languages,
+      preferred_language,
+      education: education_level,
       occupation,
-      education_level,
-      marital_status,
-      children_count: children_count ? parseInt(children_count) : null,
-      hobbies,
-      interests,
-      bio,
+      employment_type,
+      religion,
+      religious_importance,
+      political_views,
+      height: height ? parseInt(height) : null,
+      weight: weight ? parseInt(weight) : null,
+      skin_color,
+      body_type,
+      eye_color,
+      hair_color,
+      ethnicity,
+      diet,
+      smoking,
+      drinking,
+      exercise,
+      pets,
+      living_situation,
+      children,
+      gender,
+      orientation,
       ...(photoUrl && { profile_photo_url: photoUrl }),
       ...(videoUrl && { profile_video_url: videoUrl })
     };
+
+    // Only update current_step if all required fields are filled
+    if (full_name && dob && gender && country_of_birth && occupation) {
+      updateData.current_step = 'preferences';
+    }
 
     const { data, error } = await supabase
       .from('users')
@@ -681,12 +724,19 @@ const savePreferences = async (req, res) => {
       pref_relationship_type
     } = req.body;
 
+    // Validate required preferences before updating current_step
+    if (!pref_gender || !pref_age_min || !pref_age_max) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required preference fields"
+      });
+    }
+
     // Update user with preferences
     const updateData = {
-      current_step: 'submission',
       pref_gender,
-      pref_age_min,
-      pref_age_max,
+      pref_age_min: pref_age_min ? parseInt(pref_age_min) : null,
+      pref_age_max: pref_age_max ? parseInt(pref_age_max) : null,
       pref_country_of_birth,
       pref_country_of_residence,
       pref_county_of_residence,
@@ -709,6 +759,12 @@ const savePreferences = async (req, res) => {
       pref_willing_to_relocate,
       pref_relationship_type
     };
+
+    // Only update current_step if required preferences are filled
+    if (pref_gender && pref_age_min && pref_age_max) {
+      updateData.current_step = 'submission';
+      updateData.is_complete = true;
+    }
 
     const { data, error } = await supabase
       .from('users')
