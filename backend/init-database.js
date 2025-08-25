@@ -2,7 +2,7 @@
 const { Pool } = require("pg");
 const fs = require("fs");
 const path = require("path");
-require("dotenv").config();
+require("dotenv").config({ path: "./backend/.env" });
 
 async function initializeDatabase() {
   const pool = new Pool({

@@ -1,4 +1,5 @@
 
+require("dotenv").config({ path: "./backend/.env" });
 const jwt = require("jsonwebtoken");
 const fs = require("fs");
 const cloudinary = require("cloudinary").v2;
