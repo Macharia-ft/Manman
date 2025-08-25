@@ -127,10 +127,26 @@ app.get('/api/users/:email', async (req, res) => {
     const preFilteredUsers = await fetchUsersWithPreFiltering(currentUserId, currentUser);
 
     if (preFilteredUsers.length === 0) {
-      return res.json({
-        users: [],
-        message: "No users found matching your basic preferences. Consider adjusting your gender, location, or age range preferences.",
-        shouldAdjustPreferences: true
+      let adjustMessage = "No users found matching your preferences. ";
+
+      if (currentUser.pref_gender && currentUser.pref_gender !== 'Any') {
+        adjustMessage += `Try adjusting your preferred gender (currently: ${currentUser.pref_gender}). `;
+      }
+
+      if (currentUser.pref_county_of_residence) {
+        adjustMessage += `Try adjusting your preferred county (currently: ${currentUser.pref_county_of_residence}). `;
+      }
+
+      if (currentUser.pref_age_min && currentUser.pref_age_max) {
+        adjustMessage += `Try adjusting your age range (currently: ${currentUser.pref_age_min}-${currentUser.pref_age_max} years). `;
+      }
+
+      adjustMessage += "Consider broadening your criteria to find more matches.";
+
+      return res.status(200).json({
+        shouldAdjustPreferences: true,
+        message: adjustMessage,
+        users: []
       });
     }
 
