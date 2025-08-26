@@ -23,11 +23,10 @@ document.getElementById("confirmForm").addEventListener("submit", async (e) => {
 
     if (res.ok) {
       otpMsg.classList.add("ty-success");
-      otpMsg.innerText = "✅ OTP verified successfully! Please login again to continue with the next step.";
+      otpMsg.innerText = "✅ Email confirmed! You are now registered. Please login again to continue.";
 
       // Clear the form
       document.getElementById("confirmForm").reset();
-
 
       setTimeout(() => {
         window.location.href = "login.html";

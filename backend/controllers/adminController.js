@@ -101,8 +101,15 @@ exports.updateUserStatus = async (req, res) => {
     const user = data[0];
     if (user.email) {
       try {
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(user.email)) {
+          console.error(`❌ Invalid email format: ${user.email}`);
+          return res.json({ success: true, message: "User status updated successfully (email invalid)" });
+        }
+
         const subject = status === "approved" ? "Profile Approved - Takeyours" : "Profile Update - Takeyours";
-        const loginLink = `${process.env.FRONTEND_URL || 'http://localhost:5000'}/login.html`;
+        const loginLink = `${process.env.FRONTEND_URL || 'http://0.0.0.0:5000'}/login.html`;
         
         let emailContent;
         if (status === "approved") {
@@ -122,7 +129,7 @@ exports.updateUserStatus = async (req, res) => {
         }
 
         await transporter.sendMail({
-          from: process.env.GMAIL_USER,
+          from: process.env.EMAIL_USER || process.env.GMAIL_USER,
           to: user.email,
           subject: subject,
           html: emailContent,
@@ -130,7 +137,10 @@ exports.updateUserStatus = async (req, res) => {
 
         console.log(`📧 Email sent to ${user.email} for status: ${status}`);
       } catch (emailError) {
-        console.error("Email sending error:", emailError.message);
+        console.error("❌ Email sending error:", emailError.message);
+        if (emailError.message.includes('550') || emailError.message.includes('NoSuchUser')) {
+          console.error(`❌ Invalid email address: ${user.email}`);
+        }
         // Don't fail the request if email fails
       }
     }

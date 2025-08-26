@@ -18,7 +18,7 @@
     spinnerOverlay.style.display = "none";
     
     // Update button text for adjust mode
-    if (adjustMode === 'true') {
+    if (adjustMode === 'true' || editMode === 'true') {
       const submitButton = document.querySelector('button[type="submit"]');
       if (submitButton) {
         submitButton.textContent = 'Update Preferences';
@@ -128,6 +128,7 @@ form.addEventListener("submit", async (e) => {
       
       if (editMode === 'true' || adjustMode === 'true') {
         // If editing or adjusting preferences, redirect back to dashboard
+        alert("✅ Preferences updated successfully!");
         window.location.href = "dashboard_page.html";
       } else {
         // If new user, redirect to submission

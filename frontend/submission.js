@@ -101,6 +101,33 @@ uploadAgainBtn.addEventListener("click", async () => {
         }
       }
 
+      // Add upload again button for disapproved users
+      const uploadAgainBtn = document.createElement('button');
+      uploadAgainBtn.textContent = 'Upload Again';
+      uploadAgainBtn.className = 'upload-again-btn';
+      uploadAgainBtn.onclick = async () => {
+        try {
+          const resetRes = await fetch(`${config.API_BASE_URL}/api/user/reset-submission`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          if (resetRes.ok) {
+            window.location.href = "identity-verification.html";
+          } else {
+            alert("Failed to reset submission. Please try again.");
+          }
+        } catch (error) {
+          alert("Network error. Please try again.");
+        }
+      };
+      
+      const mainContent = document.querySelector('.main-content');
+      if (mainContent) {
+        mainContent.appendChild(uploadAgainBtn);
+      }
+      }
+
       reviewMessage.textContent = "❌ Your submission was disapproved by admin.";
       uploadAgainBtn.style.display = "inline-block";
     } else {

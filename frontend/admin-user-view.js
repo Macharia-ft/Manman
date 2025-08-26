@@ -63,22 +63,23 @@ async function updateStatus(newStatus) {
       return;
     }
 
-    const res = await fetch(`${config.API_BASE_URL}/api/admin/user/${userId}/status`, {
+    const res = await fetch(`${config.API_BASE_URL}/api/admin/user/status`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
+        userId: userId,
         status: newStatus,
-        admin_message: message
+        adminMessage: message
       })
     });
 
     const data = await res.json();
 
     if (res.ok) {
-      statusText.textContent = `✅ User marked as ${newStatus}`;
+      statusText.textContent = `✅ User marked as ${newStatus}. Email sent with login link.`;
     } else {
       statusText.textContent = `❌ Error: ${data.message}`;
     }

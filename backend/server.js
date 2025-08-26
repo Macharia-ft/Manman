@@ -127,7 +127,7 @@ app.get('/api/users/:email', async (req, res) => {
     const preFilteredUsers = await fetchUsersWithPreFiltering(currentUserId, currentUser);
 
     if (preFilteredUsers.length === 0) {
-      let adjustMessage = "No users found matching your preferences. ";
+      let adjustMessage = "No users found matching your preferences for All Profiles. ";
 
       if (currentUser.pref_gender && currentUser.pref_gender !== 'Any') {
         adjustMessage += `Try adjusting your preferred gender (currently: ${currentUser.pref_gender}). `;
@@ -146,7 +146,8 @@ app.get('/api/users/:email', async (req, res) => {
       return res.status(200).json({
         shouldAdjustPreferences: true,
         message: adjustMessage,
-        users: []
+        users: [],
+        section: 'all_profiles'
       });
     }
 
