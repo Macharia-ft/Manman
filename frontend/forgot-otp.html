@@ -82,8 +82,10 @@
         loader.style.display = "none";
 
         if (res.ok) {
-          msg.innerText = "OTP verified.";
-          window.location.href = "reset-password.html";
+          msg.innerText = "✅ OTP verified!";
+          setTimeout(() => {
+            window.location.href = `reset-password.html?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`;
+          }, 1500);
         } else {
           msg.innerText = data.error;
         }
