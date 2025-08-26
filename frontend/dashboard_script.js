@@ -59,18 +59,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const responseData = await userResponse.json();
     
-    // Handle new response format with pre-filtering
+    // Handle new response format with pre-filtering - only for all profiles
     if (responseData.shouldAdjustPreferences) {
-      container.innerHTML = `
-        <div class="no-matches-message">
-          <h3>No matches found</h3>
-          <p>${responseData.message}</p>
-          <button onclick="window.location.href='preferences.html'" class="adjust-preferences-btn">
-            Adjust Preferences
-          </button>
-        </div>
-      `;
-      return;
+      // Store the no users state but don't show notification yet
+      allProfiles = [];
+      localStorage.setItem(userStorageKey("allProfiles"), JSON.stringify(allProfiles));
+      
+      // Show notification only if we're currently viewing "all" section
+      if (activeSection === "all") {
+        container.innerHTML = `
+          <div class="no-matches-message">
+            <h3>No users found</h3>
+            <p>${responseData.message}</p>
+            <button onclick="window.location.href='preferences.html'" class="adjust-preferences-btn">
+              Adjust Preferences
+            </button>
+          </div>
+        `;
+        return;
+      }
     }
 
     allProfiles = responseData.users || responseData;
@@ -119,7 +126,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (activeSection === "accepted") profilesToRender = acceptedProfiles;
 
     if (profilesToRender.length === 0) {
-      container.innerHTML = "<p>No profiles found.</p>";
+      if (activeSection === "all") {
+        // Check if we need to show the no users found message for all profiles
+        container.innerHTML = `
+          <div class="no-matches-message">
+            <h3>No users found</h3>
+            <p>No users found matching your preferences. Try adjusting your gender, location, or age range preferences.</p>
+            <button onclick="window.location.href='preferences.html'" class="adjust-preferences-btn">
+              Adjust Preferences
+            </button>
+          </div>
+        `;
+      } else {
+        container.innerHTML = "<p>No profiles found.</p>";
+      }
       return;
     }
 
@@ -277,7 +297,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (action === 'edit') {
       viewProfileBtn.textContent = 'Edit Profile';
       viewProfileBtn.onclick = () => {
-        window.location.href = "edit_profile.html"; // Redirect to the current user's profile edit page
+        window.location.href = "preferences.html?edit=true"; // Redirect to preferences page in edit mode
       };
     } else {
       viewProfileBtn.textContent = 'View Profile';

@@ -102,7 +102,17 @@ form.addEventListener("submit", async (e) => {
     spinner.style.display = "none";
 
     if (response.ok && result.success) {
-      window.location.href = "submission.html";
+      // Check if we're in edit mode (coming from dashboard)
+      const urlParams = new URLSearchParams(window.location.search);
+      const editMode = urlParams.get('edit');
+      
+      if (editMode === 'true') {
+        // If editing preferences, redirect back to dashboard
+        window.location.href = "dashboard_page.html";
+      } else {
+        // If new user, redirect to submission
+        window.location.href = "submission.html";
+      }
     } else {
       alert("❌ " + (result.message || "Error saving preferences."));
     }
