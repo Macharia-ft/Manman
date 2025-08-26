@@ -7,13 +7,24 @@ const supabaseAnonKey = process.env.ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Email transporter setup
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_PASS,
-  },
-});
+let transporter;
+try {
+  if (process.env.GMAIL_USER && process.env.GMAIL_PASS) {
+    transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASS,
+      },
+    });
+  } else {
+    console.warn("⚠️ Gmail credentials not found. Email functionality disabled.");
+    transporter = null;
+  }
+} catch (error) {
+  console.error("❌ Email transporter setup failed:", error.message);
+  transporter = null;
+}
 
 // Admin login
 exports.adminLogin = async (req, res) => {
@@ -146,14 +157,17 @@ exports.updateUserStatus = async (req, res) => {
           `;
         }
 
-        await transporter.sendMail({
-          from: process.env.EMAIL_USER || process.env.GMAIL_USER,
-          to: user.email,
-          subject: subject,
-          html: emailContent,
-        });
-
-        console.log(`📧 Email sent to ${user.email} for status: ${status}`);
+        if (transporter) {
+          await transporter.sendMail({
+            from: process.env.EMAIL_USER || process.env.GMAIL_USER,
+            to: user.email,
+            subject: subject,
+            html: emailContent,
+          });
+          console.log(`📧 Email sent to ${user.email} for status: ${status}`);
+        } else {
+          console.warn(`📧 Email not sent to ${user.email} due to missing transporter.`);
+        }
       } catch (emailError) {
         console.error("❌ Email sending error:", emailError.message);
         if (emailError.message.includes('550') || emailError.message.includes('NoSuchUser')) {

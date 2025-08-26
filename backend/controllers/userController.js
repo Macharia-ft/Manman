@@ -816,5 +816,63 @@ module.exports = {
         message: "Server error during profile photo fetch"
       });
     }
+  },
+
+  // Send match request
+  sendMatchRequest: async (req, res) => {
+    try {
+      const token = req.headers.authorization?.split(" ")[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const senderEmail = decoded.email;
+      const { targetUserId } = req.body;
+
+      if (!targetUserId) {
+        return res.status(400).json({ success: false, message: "Target user ID is required" });
+      }
+
+      // Get sender info
+      const { data: sender, error: senderError } = await supabase
+        .from('users')
+        .select('id, full_name')
+        .eq('email', senderEmail)
+        .single();
+
+      if (senderError || !sender) {
+        return res.status(404).json({ success: false, message: "Sender not found" });
+      }
+
+      // Check if match request already exists
+      const { data: existingMatch, error: matchError } = await supabase
+        .from('matches')
+        .select('*')
+        .or(`and(sender_id.eq.${sender.id},receiver_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},receiver_id.eq.${sender.id})`)
+        .single();
+
+      if (existingMatch) {
+        return res.status(400).json({ success: false, message: "Match request already exists" });
+      }
+
+      // Create match request
+      const { data: newMatch, error: createError } = await supabase
+        .from('matches')
+        .insert({
+          sender_id: sender.id,
+          receiver_id: targetUserId,
+          status: 'pending',
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        console.error("Match request creation error:", createError.message);
+        return res.status(500).json({ success: false, message: "Failed to create match request" });
+      }
+
+      res.json({ success: true, message: "Match request sent successfully", match: newMatch });
+    } catch (err) {
+      console.error("❌ Error in sendMatchRequest:", err.message);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
   }
 };
