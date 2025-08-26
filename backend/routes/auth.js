@@ -242,17 +242,23 @@ router.post("/forgot-password", async (req, res) => {
 
 // ---------- VERIFY RESET OTP ----------
 router.post("/verify-reset-otp", (req, res) => {
-  const { email, otp } = req.body;
-  if (!email || !otp) {
-    return res.status(400).json({ error: "Missing email or OTP." });
-  }
+  try {
+    const { email, otp } = req.body;
+    
+    if (!email || !otp) {
+      return res.status(400).json({ error: "Missing email or OTP." });
+    }
 
-  const isValid = verifyOTP(email, otp);
-  if (!isValid) {
-    return res.status(400).json({ error: "Wrong OTP." });
-  }
+    const isValid = verifyOTP(email, otp);
+    if (!isValid) {
+      return res.status(400).json({ error: "Wrong OTP." });
+    }
 
-  res.status(200).json({ message: "OTP verified." });
+    return res.status(200).json({ message: "OTP verified." });
+  } catch (error) {
+    console.error("Verify reset OTP error:", error);
+    return res.status(500).json({ error: "Server error during OTP verification." });
+  }
 });
 
 // Reset password with OTP

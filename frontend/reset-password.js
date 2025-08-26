@@ -28,6 +28,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       },
       body: JSON.stringify({ email, otp })
     });
+
+    // Check if response is HTML (error page) instead of JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      console.error('Server returned non-JSON response:', await response.text());
+      document.getElementById('error-message').textContent = 'Server error. Please try again later.';
+      document.getElementById('reset-form').style.display = 'none';
+      return;
+    }
+
     const result = await response.json();
 
     if (!response.ok) {
