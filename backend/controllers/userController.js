@@ -710,5 +710,63 @@ module.exports = {
         message: "Server error during personal reset"
       });
     }
+  },
+
+  getUserProfilePhoto: async (req, res) => {
+    console.log("📦 Incoming /api/user/profile-photo request...");
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ success: false, message: "Missing token" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    let decoded;
+
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log("🔐 Authenticated:", decoded.email);
+    } catch (err) {
+      console.error("❌ Token verification failed:", err.message);
+      return res.status(401).json({ success: false, message: "Invalid token" });
+    }
+
+    const userEmail = req.params.email || decoded.email;
+
+    try {
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('profile_photo_url')
+        .eq('email', userEmail)
+        .single();
+
+      if (error) {
+        console.error("🔥 Get Profile Photo Error:", error);
+        return res.status(500).json({
+          success: false,
+          message: error.message
+        });
+      }
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found"
+        });
+      }
+
+      console.log("✅ Profile photo fetched for:", userEmail);
+      res.status(200).json({
+        success: true,
+        profile_photo_url: user.profile_photo_url || 'https://via.placeholder.com/100'
+      });
+
+    } catch (error) {
+      console.error("🔥 Get profile photo error:", error.message);
+      res.status(500).json({
+        success: false,
+        message: "Server error during profile photo fetch"
+      });
+    }
   }
 };

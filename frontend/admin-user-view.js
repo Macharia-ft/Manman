@@ -48,16 +48,20 @@ async function loadUser() {
       <p><strong>National ID Number:</strong> ${user.national_id_number || "—"}</p>
 
       <h4>ID Front</h4>
-      <img src="${user.id_front_url}" alt="ID Front" />
+      ${user.id_front_url ? `<img src="${user.id_front_url}" alt="ID Front" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+      <p style="display:none; color:red;">Image failed to load</p>` : '<p>No ID front image</p>'}
 
       <h4>ID Back</h4>
-      <img src="${user.id_back_url}" alt="ID Back" />
+      ${user.id_back_url ? `<img src="${user.id_back_url}" alt="ID Back" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+      <p style="display:none; color:red;">Image failed to load</p>` : '<p>No ID back image</p>'}
 
       <h4>Liveness Video</h4>
-      <video src="${user.liveness_video_url}" controls></video>
+      ${user.liveness_video_url ? `<video src="${user.liveness_video_url}" controls onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"></video>
+      <p style="display:none; color:red;">Video failed to load</p>` : '<p>No liveness video</p>'}
 
       <h4>Profile Photo</h4>
-      <img src="${user.profile_photo_url}" alt="Profile Photo" />
+      ${user.profile_photo_url ? `<img src="${user.profile_photo_url}" alt="Profile Photo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+      <p style="display:none; color:red;">Image failed to load</p>` : '<p>No profile photo</p>'}
     `;
   } catch (err) {
     userInfoContainer.innerHTML = "⚠️ Error loading user.";

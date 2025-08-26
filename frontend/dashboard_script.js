@@ -40,6 +40,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const profileIcon = document.querySelector('.profile-icon img');
     profileIcon.src = profile_photo_url || 'https://via.placeholder.com/100';
+    profileIcon.onerror = function() {
+      this.src = 'https://via.placeholder.com/100';
+    };
 
     // Show the big profile photo when clicked
     profileIcon.addEventListener('click', () => {
@@ -142,7 +145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       userCard.innerHTML = `
         <div class="profile-info">
-          <img src="${photoUrl}" alt="Profile" class="profile-pic" id="profilePic-${user.id}">
+          <img src="${photoUrl}" alt="Profile" class="profile-pic" id="profilePic-${user.id}" onerror="this.src='https://via.placeholder.com/100';">
           <div class="profile-details">
             <h3>${user.full_name}</h3>
             <p>${age} yrs</p>
@@ -151,7 +154,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <span class="score">${matchScore}</span>
         </div>
         <div class="profile-video">
-          ${videoUrl ? `<video src="${videoUrl}" controls></video>` : ""}
+          ${videoUrl ? `<video src="${videoUrl}" controls onerror="this.style.display='none';"></video>` : "<p>No video available</p>"}
         </div>
         <div class="profile-actions"></div>
       `;
@@ -273,6 +276,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const closeProfileBtn = document.getElementById('closeProfileBtn');
 
     floatingProfilePic.src = user.profile_photo_url || 'https://via.placeholder.com/100';
+    floatingProfilePic.onerror = function() {
+      this.src = 'https://via.placeholder.com/100';
+    };
     floatingProfilePhoto.style.display = 'block';
     document.body.style.overflow = 'hidden';
 
