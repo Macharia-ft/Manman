@@ -8,23 +8,6 @@
     return;
   }
 
-  // Check if we're in adjust mode (coming from dashboard)
-  const urlParams = new URLSearchParams(window.location.search);
-  const adjustMode = urlParams.get('adjust');
-  const editMode = urlParams.get('edit');
-  
-  // If in adjust or edit mode, skip progress check and go straight to form
-  if (adjustMode === 'true' || editMode === 'true') {
-    spinnerOverlay.style.display = "none";
-    
-    // Update button text for adjust mode
-    const submitButton = document.querySelector('button[type="submit"]');
-    if (submitButton) {
-      submitButton.textContent = 'Update Preferences';
-    }
-    return;
-  }
-
   try {
     spinnerOverlay.style.display = "flex";
 
@@ -86,7 +69,7 @@ form.addEventListener("submit", async (e) => {
     pref_country_of_residence: formData.get("pref_country_of_residence"),
     pref_county_of_residence: formData.get("pref_county_of_residence"),
     pref_country: formData.get("pref_country"),
-    pref_languages: formData.getAll("pref_languages"),
+    pref_languages: formData.get("pref_languages"),
     pref_religion: formData.get("pref_religion"),
     pref_religion_importance: formData.get("pref_religion_importance"),
     pref_height: parseInt(formData.get("pref_height")),
@@ -119,19 +102,7 @@ form.addEventListener("submit", async (e) => {
     spinner.style.display = "none";
 
     if (response.ok && result.success) {
-      // Check if we're in edit mode or adjust mode (coming from dashboard)
-      const urlParams = new URLSearchParams(window.location.search);
-      const editMode = urlParams.get('edit');
-      const adjustMode = urlParams.get('adjust');
-      
-      if (editMode === 'true' || adjustMode === 'true') {
-        // If editing or adjusting preferences, redirect back to dashboard
-        alert("✅ Preferences updated successfully!");
-        window.location.href = "dashboard_page.html";
-      } else {
-        // If new user, redirect to submission
-        window.location.href = "submission.html";
-      }
+      window.location.href = "submission.html";
     } else {
       alert("❌ " + (result.message || "Error saving preferences."));
     }
