@@ -49,7 +49,6 @@ async function loadUser() {
 
       <h4>ID Front</h4>
       ${user.id_front_url ? `
-        <p><strong>URL:</strong> ${user.id_front_url}</p>
         <img src="${user.id_front_url}" alt="ID Front" style="max-width: 400px; height: auto;" 
              onerror="console.error('ID Front failed to load:', this.src); this.style.display='none'; this.nextElementSibling.style.display='block';" 
              onload="console.log('ID Front loaded successfully');" />
@@ -57,15 +56,14 @@ async function loadUser() {
 
       <h4>ID Back</h4>
       ${user.id_back_url ? `
-        <p><strong>URL:</strong> ${user.id_back_url}</p>
         <img src="${user.id_back_url}" alt="ID Back" style="max-width: 400px; height: auto;" 
              onerror="console.error('ID Back failed to load:', this.src); this.style.display='none'; this.nextElementSibling.style.display='block';" 
              onload="console.log('ID Back loaded successfully');" />
         <p style="display:none; color:red;">Image failed to load</p>` : '<p>No ID back image</p>'}
 
       <h4>Liveness Video</h4>
+      <p><strong>Instructions:</strong> Record a video facing the camera, blink your eyes, turn your head left and right, and say "I am [your full name] and this is my verification video for Takeyours"</p>
       ${user.liveness_video_url ? `
-        <p><strong>URL:</strong> ${user.liveness_video_url}</p>
         <video src="${user.liveness_video_url}" controls style="max-width: 400px; height: auto;" 
                onerror="console.error('Liveness video failed to load:', this.src); this.style.display='none'; this.nextElementSibling.style.display='block';" 
                onloadstart="console.log('Liveness video loading');" 
@@ -73,9 +71,8 @@ async function loadUser() {
         <p style="display:none; color:red;">Video failed to load</p>` : '<p>No liveness video</p>'}
 
       <h4>Profile Photo</h4>
-      ${user.profile_photo_url ? `
-        <p><strong>URL:</strong> ${user.profile_photo_url}</p>
-        <img src="${user.profile_photo_url}" alt="Profile Photo" style="max-width: 400px; height: auto;" 
+      ${user.photo_url ? `
+        <img src="${user.photo_url}" alt="Profile Photo" style="max-width: 400px; height: auto;" 
              onerror="console.error('Profile photo failed to load:', this.src); this.style.display='none'; this.nextElementSibling.style.display='block';" 
              onload="console.log('Profile photo loaded successfully');" />
         <p style="display:none; color:red;">Image failed to load</p>` : '<p>No profile photo</p>'}

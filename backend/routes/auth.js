@@ -322,3 +322,62 @@ router.get("/user/progress", async (req, res) => {
 });
 
 module.exports = router;
+// Add this route to the existing auth.js file
+router.post("/reset-password", async (req, res) => {
+  console.log("📦 Incoming /api/auth/reset-password request...");
+  
+  const { email, newPassword } = req.body;
+  
+  if (!email || !newPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "Email and new password are required"
+    });
+  }
+  
+  if (newPassword.length < 8) {
+    return res.status(400).json({
+      success: false,
+      message: "Password must be at least 8 characters long"
+    });
+  }
+  
+  try {
+    const bcrypt = require("bcrypt");
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    const { data, error } = await supabase
+      .from('users')
+      .update({ password: hashedPassword })
+      .eq('email', email)
+      .select();
+    
+    if (error) {
+      console.error("🔥 Password reset error:", error);
+      return res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+    
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+    
+    console.log("✅ Password reset successful for:", email);
+    res.status(200).json({
+      success: true,
+      message: "Password updated successfully"
+    });
+    
+  } catch (err) {
+    console.error("🔥 Password reset error:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Server error during password reset"
+    });
+  }
+});

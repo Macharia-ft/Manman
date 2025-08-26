@@ -8,15 +8,9 @@ const spinnerOverlay = document.getElementById("spinnerOverlay");
 const token = localStorage.getItem("token");
 
 uploadAgainBtn.addEventListener("click", async () => {
-  if (!token) return (window.location.href = "login.html");
-
-  // Confirm action with user
-  const confirmReset = confirm("⚠️ This will delete all your submitted data and restart the verification process from the beginning. Are you sure you want to continue?");
-  if (!confirmReset) return;
-
-  spinnerOverlay.style.display = "flex";
-  uploadAgainBtn.disabled = true;
+  // No confirmation needed, proceed directly with reset
   uploadAgainBtn.textContent = "🔄 Resetting...";
+  uploadAgainBtn.disabled = true;
 
   try {
     // Always use complete reset for upload again
@@ -25,25 +19,22 @@ uploadAgainBtn.addEventListener("click", async () => {
       headers: { Authorization: `Bearer ${token}` }
     });
 
-    const resetData = await resetRes.json();
-
-    spinnerOverlay.style.display = "none";
-
-    if (resetRes.ok && resetData.success) {
-      // Show success message and redirect to identity verification
-      alert("✅ All data has been reset successfully. You will now restart the verification process.");
+    if (resetRes.ok) {
+      // Redirect to identity verification after successful reset
       window.location.href = "identity-verification.html";
     } else {
-      uploadAgainBtn.disabled = false;
+      // Handle reset failure
       uploadAgainBtn.textContent = "🔄 Upload Again";
-      alert("❌ Failed to reset: " + (resetData.message || "Unknown error."));
+      uploadAgainBtn.disabled = false;
+      // Consider showing a more specific error message if available from resetRes.json()
+      alert("❌ Failed to reset: Please try again.");
     }
   } catch (err) {
-    spinnerOverlay.style.display = "none";
-    uploadAgainBtn.disabled = false;
-    uploadAgainBtn.textContent = "🔄 Upload Again";
     console.error("❌ Reset error:", err);
-    alert("❌ Network error during reset.");
+    // Handle network errors during reset
+    uploadAgainBtn.textContent = "🔄 Upload Again";
+    uploadAgainBtn.disabled = false;
+    alert("❌ Network error during reset. Please try again.");
   }
 });
 
