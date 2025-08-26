@@ -23,7 +23,7 @@ document.getElementById("confirmForm").addEventListener("submit", async (e) => {
 
     if (res.ok) {
       otpMsg.classList.add("ty-success");
-      otpMsg.innerText = "✅ Email confirmed! You are now registered. Please login again to continue.";
+      otpMsg.innerText = "🎉 Account created successfully! Welcome to Takeyours. Redirecting to login...";
 
       // Clear the form
       document.getElementById("confirmForm").reset();
