@@ -1,34 +1,56 @@
-
 const form = document.getElementById("resetPasswordForm");
 const spinner = document.getElementById("spinner");
 
-// Get email from URL parameters (passed from OTP confirmation)
-const urlParams = new URLSearchParams(window.location.search);
-const email = urlParams.get('email');
+document.addEventListener('DOMContentLoaded', async () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const email = urlParams.get('email');
+  const otp = urlParams.get('otp');
 
-if (!email) {
-  alert("❌ Invalid reset link. Please try again.");
-  window.location.href = "login.html";
-}
+  if (!email || !otp) {
+    document.getElementById('error-message').textContent = 'Invalid reset link. Please request a new password reset.';
+    document.getElementById('reset-form').style.display = 'none';
+    return;
+  }
+
+  // Verify the reset token
+  try {
+    const response = await fetch(`${config.API_BASE_URL}/api/auth/verify-reset-token?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`);
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      document.getElementById('error-message').textContent = result.message || 'Invalid or expired reset link. Please request a new password reset.';
+      document.getElementById('reset-form').style.display = 'none';
+      return;
+    }
+
+    // Set email and otp in hidden fields
+    document.getElementById('email').value = email;
+    document.getElementById('otp').value = otp;
+  } catch (error) {
+    console.error('Error verifying reset token:', error);
+    document.getElementById('error-message').textContent = 'Error verifying reset link. Please try again.';
+    document.getElementById('reset-form').style.display = 'none';
+  }
+});
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
-  
+
   const newPassword = form.newPassword.value;
   const confirmPassword = form.confirmPassword.value;
-  
+
   if (newPassword !== confirmPassword) {
     alert("❌ Passwords do not match. Please try again.");
     return;
   }
-  
+
   if (newPassword.length < 8) {
     alert("❌ Password must be at least 8 characters long.");
     return;
   }
-  
+
   spinner.style.display = "block";
-  
+
   try {
     const response = await fetch(`${config.API_BASE_URL}/api/auth/reset-password`, {
       method: "POST",
@@ -40,10 +62,10 @@ form.addEventListener("submit", async (e) => {
         newPassword: newPassword
       })
     });
-    
+
     const result = await response.json();
     spinner.style.display = "none";
-    
+
     if (response.ok && result.success) {
       alert("✅ Password updated successfully! You can now login with your new password.");
       window.location.href = "login.html";

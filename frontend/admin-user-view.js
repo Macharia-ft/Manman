@@ -62,7 +62,7 @@ async function loadUser() {
         <p style="display:none; color:red;">Image failed to load</p>` : '<p>No ID back image</p>'}
 
       <h4>Liveness Video</h4>
-      <p><strong>Instructions:</strong> Record a video facing the camera, blink your eyes, turn your head left and right, and say "I am [your full name] and this is my verification video for Takeyours"</p>
+      <p><strong>Instructions followed by user:</strong> Face the camera, blink eyes, turn head left and right, say "I am [full name] and this is my verification video for Takeyours"</p>
       ${user.liveness_video_url ? `
         <video src="${user.liveness_video_url}" controls style="max-width: 400px; height: auto;" 
                onerror="console.error('Liveness video failed to load:', this.src); this.style.display='none'; this.nextElementSibling.style.display='block';" 
@@ -71,8 +71,8 @@ async function loadUser() {
         <p style="display:none; color:red;">Video failed to load</p>` : '<p>No liveness video</p>'}
 
       <h4>Profile Photo</h4>
-      ${user.photo_url ? `
-        <img src="${user.photo_url}" alt="Profile Photo" style="max-width: 400px; height: auto;" 
+      ${user.profile_photo_url || user.photo_url ? `
+        <img src="${user.profile_photo_url || user.photo_url}" alt="Profile Photo" style="max-width: 400px; height: auto;" 
              onerror="console.error('Profile photo failed to load:', this.src); this.style.display='none'; this.nextElementSibling.style.display='block';" 
              onload="console.log('Profile photo loaded successfully');" />
         <p style="display:none; color:red;">Image failed to load</p>` : '<p>No profile photo</p>'}

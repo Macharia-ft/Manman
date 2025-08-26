@@ -50,7 +50,7 @@ router.post("/send-otp", async (req, res) => {
 
     console.log(`📧 Attempting to send OTP to: ${email}`);
     console.log(`📧 Using sender email: ${process.env.EMAIL_USER || process.env.GMAIL_USER}`);
-    
+
     const mailOptions = {
       from: `"Takeyours" <${process.env.EMAIL_USER || process.env.GMAIL_USER}>`,
       to: email,
@@ -211,7 +211,7 @@ router.post("/forgot-password", async (req, res) => {
     storeOTP(email, otp);
 
     console.log(`📧 Sending reset OTP to: ${email}`);
-    
+
     const mailOptions = {
       from: `"Takeyours" <${process.env.EMAIL_USER || process.env.GMAIL_USER}>`,
       to: email,
@@ -255,28 +255,101 @@ router.post("/verify-reset-otp", (req, res) => {
   res.status(200).json({ message: "OTP verified." });
 });
 
-// ---------- RESET PASSWORD ----------
+// Reset password with OTP
 router.post("/reset-password", async (req, res) => {
-  const { email, newPassword } = req.body;
-  if (!email || !newPassword) {
-    return res.status(400).json({ error: "Missing email or new password." });
+  const { email, otp, newPassword } = req.body;
+
+  if (!email || !otp || !newPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "Email, OTP, and new password are required"
+    });
   }
 
   try {
-    const { data, error } = await supabase
-      .from('users')
-      .update({ password: newPassword })
-      .eq('email', email)
-      .select();
+    // Get stored OTP
+    const storedOTPData = otpStore.get(email);
 
-    if (error || !data || data.length === 0) {
-      return res.status(404).json({ error: "User not found." });
+    if (!storedOTPData) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired reset link. Please request a new password reset."
+      });
     }
 
-    res.status(200).json({ message: "Password reset successfully." });
-  } catch (err) {
-    console.error("Reset password error:", err.message);
-    res.status(500).json({ error: "Failed to reset password." });
+    // Check if OTP matches and hasn't expired
+    if (storedOTPData.otp !== otp || Date.now() > storedOTPData.expiresAt) {
+      otpStore.delete(email); // Clean up expired OTP
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired reset link. Please request a new password reset."
+      });
+    }
+
+    // Update password in database
+    const { error } = await supabase
+      .from('users')
+      .update({ password: newPassword })
+      .eq('email', email);
+
+    if (error) {
+      console.error("Password update error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to update password"
+      });
+    }
+
+    // Clear the OTP after successful password reset
+    otpStore.delete(email);
+
+    console.log("✅ Password reset successfully for:", email);
+    res.json({
+      success: true,
+      message: "Password updated successfully"
+    });
+
+  } catch (error) {
+    console.error("Reset password error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
+  }
+});
+
+// Verify reset token route
+router.get("/verify-reset-token", async (req, res) => {
+  const { email, otp } = req.query;
+
+  if (!email || !otp) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid reset link"
+    });
+  }
+
+  try {
+    const storedOTPData = otpStore.get(email);
+
+    if (!storedOTPData || storedOTPData.otp !== otp || Date.now() > storedOTPData.expiresAt) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired reset link"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Valid reset token"
+    });
+
+  } catch (error) {
+    console.error("Verify reset token error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
   }
 });
 
@@ -322,62 +395,3 @@ router.get("/user/progress", async (req, res) => {
 });
 
 module.exports = router;
-// Add this route to the existing auth.js file
-router.post("/reset-password", async (req, res) => {
-  console.log("📦 Incoming /api/auth/reset-password request...");
-  
-  const { email, newPassword } = req.body;
-  
-  if (!email || !newPassword) {
-    return res.status(400).json({
-      success: false,
-      message: "Email and new password are required"
-    });
-  }
-  
-  if (newPassword.length < 8) {
-    return res.status(400).json({
-      success: false,
-      message: "Password must be at least 8 characters long"
-    });
-  }
-  
-  try {
-    const bcrypt = require("bcrypt");
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    
-    const { data, error } = await supabase
-      .from('users')
-      .update({ password: hashedPassword })
-      .eq('email', email)
-      .select();
-    
-    if (error) {
-      console.error("🔥 Password reset error:", error);
-      return res.status(500).json({
-        success: false,
-        message: error.message
-      });
-    }
-    
-    if (!data || data.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found"
-      });
-    }
-    
-    console.log("✅ Password reset successful for:", email);
-    res.status(200).json({
-      success: true,
-      message: "Password updated successfully"
-    });
-    
-  } catch (err) {
-    console.error("🔥 Password reset error:", err.message);
-    res.status(500).json({
-      success: false,
-      message: "Server error during password reset"
-    });
-  }
-});

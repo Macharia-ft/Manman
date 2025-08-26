@@ -806,7 +806,7 @@ module.exports = {
       console.log("✅ Profile photo fetched for:", userEmail);
       res.status(200).json({
         success: true,
-        profile_photo_url: user.profile_photo_url || 'https://via.placeholder.com/100'
+        profile_photo_url: user.profile_photo_url || user.photo_url || 'https://via.placeholder.com/100'
       });
 
     } catch (error) {
