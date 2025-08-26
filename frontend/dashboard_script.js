@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       userCard.innerHTML = `
         <div class="profile-info">
-          <img src="${photoUrl}" alt="Profile" class="profile-pic" id="profilePic-${user.id}" onerror="this.src='https://via.placeholder.com/100';">
+          <img src="${photoUrl}" alt="Profile" class="profile-pic" id="profilePic-${user.id}" onerror="this.src='https://via.placeholder.com/100';" onload="console.log('Image loaded:', this.src);">
           <div class="profile-details">
             <h3>${user.full_name}</h3>
             <p>${age} yrs</p>
@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <span class="score">${matchScore}</span>
         </div>
         <div class="profile-video">
-          ${videoUrl ? `<video src="${videoUrl}" controls onerror="this.style.display='none';"></video>` : "<p>No video available</p>"}
+          ${videoUrl ? `<video src="${videoUrl}" controls preload="metadata" onerror="console.error('Video failed to load:', this.src); this.style.display='none';" onloadstart="console.log('Video loading:', this.src);"></video>` : "<p>No video available</p>"}
         </div>
         <div class="profile-actions"></div>
       `;

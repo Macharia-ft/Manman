@@ -554,11 +554,12 @@ module.exports = {
           children_count: null,
           hobbies: null,
           interests: null,
-          bio: null,
           profile_photo_url: null,
           profile_video_url: null,
-          national_id_url: null,
-          selfie_url: null
+          id_front_url: null,
+          id_back_url: null,
+          liveness_video_url: null,
+          national_id_number: null
         })
         .eq('email', userEmail)
         .select();
@@ -614,8 +615,10 @@ module.exports = {
           current_step: 'identity',
           status: 'pending',
           admin_message: null,
-          national_id_url: null,
-          selfie_url: null
+          id_front_url: null,
+          id_back_url: null,
+          liveness_video_url: null,
+          national_id_number: null
         })
         .eq('email', userEmail)
         .select();
@@ -682,7 +685,6 @@ module.exports = {
           children_count: null,
           hobbies: null,
           interests: null,
-          bio: null,
           profile_photo_url: null,
           profile_video_url: null
         })
