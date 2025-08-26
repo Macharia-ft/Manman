@@ -257,16 +257,24 @@ router.post("/verify-reset-otp", (req, res) => {
 
 // Reset password with OTP
 router.post("/reset-password", async (req, res) => {
-  const { email, newPassword } = req.body;
+  const { email, otp, newPassword } = req.body;
 
-  if (!email || !newPassword) {
+  if (!email || !otp || !newPassword) {
     return res.status(400).json({
       success: false,
-      message: "Email and new password are required"
+      message: "Email, OTP, and new password are required"
     });
   }
 
   try {
+    // Verify OTP first
+    const isValid = verifyOTP(email, otp);
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired reset link. Please request a new password reset."
+      });
+    }
 
     // Update password in database
     const { error } = await supabase

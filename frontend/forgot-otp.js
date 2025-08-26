@@ -33,7 +33,7 @@ document.getElementById("otpForm").addEventListener("submit", async (e) => {
     if (res.ok) {
       msg.innerText = "✅ OTP verified!";
       setTimeout(() => {
-        window.location.href = "reset-password.html";
+        window.location.href = `reset-password.html?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`;
       }, 1500);
     } else {
       msg.innerText = `❌ ${data.error || "Invalid OTP."}`;
