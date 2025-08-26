@@ -29,10 +29,17 @@ exports.adminLogin = async (req, res) => {
       .from('admins')
       .select('*')
       .eq('email', email)
-      .eq('password', password)
       .single();
 
     if (error || !data) {
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
+    }
+
+    // Import bcrypt for password verification
+    const bcrypt = require("bcrypt");
+    const passwordMatch = await bcrypt.compare(password, data.password_hash);
+
+    if (!passwordMatch) {
       return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
 

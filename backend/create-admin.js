@@ -9,7 +9,7 @@ require("dotenv").config();
   });
 
   const email = "takeyours001@gmail.com";
-  const password = "0768012671is"; // change this!
+  const password = "0768012671is";
   const hashed = await bcrypt.hash(password, 10);
 
   await pool.query(

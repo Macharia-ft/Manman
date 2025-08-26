@@ -56,7 +56,7 @@ document.getElementById("resendBtn").addEventListener("click", async () => {
   msg.innerText = "Resending OTP...";
 
   try {
-    const res = await fetch(`${config.API_BASE_URL}/forgot-password`, {
+    const res = await fetch(`${config.API_BASE_URL}/api/forgot-password`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
