@@ -1,4 +1,3 @@
-
 require("dotenv").config({ path: "./backend/.env" });
 const express = require("express");
 const router = express.Router();
@@ -19,12 +18,10 @@ const supabaseAnonKey = process.env.ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT,
-  secure: process.env.EMAIL_SECURE === "true",
+  service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+    user: process.env.GMAIL_USER || process.env.EMAIL_USER,
+    pass: process.env.GMAIL_PASS || process.env.EMAIL_PASS
   }
 });
 
@@ -141,7 +138,7 @@ router.post("/login", async (req, res) => {
         .from('users')
         .update({ current_step: 'identity' })
         .eq('email', email);
-      
+
       if (updateError) {
         console.error("Update error:", updateError);
       }

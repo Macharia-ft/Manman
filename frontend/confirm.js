@@ -12,7 +12,7 @@ document.getElementById("confirmForm").addEventListener("submit", async (e) => {
   otpLoading.style.display = "block";
 
   try {
-    const res = await fetch(`${config.API_BASE_URL}/verify-otp`, {
+    const res = await fetch(`${config.API_BASE_URL}/api/verify-otp`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, otp, password })
@@ -49,7 +49,7 @@ resendBtn.addEventListener("click", async () => {
   otpLoading.style.display = "block";
 
   try {
-    const res = await fetch(`${config.API_BASE_URL}/send-otp`, {
+    const res = await fetch(`${config.API_BASE_URL}/api/send-otp`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password })
