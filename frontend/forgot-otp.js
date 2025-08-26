@@ -19,7 +19,7 @@ document.getElementById("otpForm").addEventListener("submit", async (e) => {
   }
 
   try {
-    const res = await fetch(`${config.API_BASE_URL}/api/verify-reset-otp`, {
+    const res = await fetch(`${config.API_BASE_URL}/api/auth/verify-reset-otp`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -56,7 +56,7 @@ document.getElementById("resendBtn").addEventListener("click", async () => {
   msg.innerText = "Resending OTP...";
 
   try {
-    const res = await fetch(`${config.API_BASE_URL}/api/forgot-password`, {
+    const res = await fetch(`${config.API_BASE_URL}/api/auth/forgot-password`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"

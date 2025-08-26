@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Verify the reset token
   try {
-    const response = await fetch(`${config.API_BASE_URL}/api/verify-reset-otp`, {
+    const response = await fetch(`${config.API_BASE_URL}/api/auth/verify-reset-otp`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
