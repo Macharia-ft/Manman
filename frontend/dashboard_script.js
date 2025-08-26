@@ -60,23 +60,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Handle new response format with pre-filtering - only for all profiles
     if (responseData.shouldAdjustPreferences) {
-      // Store the no users state but don't show notification yet
+      // Store the no users state
       allProfiles = [];
       localStorage.setItem(userStorageKey("allProfiles"), JSON.stringify(allProfiles));
-
-      // Show notification only if we're currently viewing "all" section
-      if (activeSection === "all") {
-        container.innerHTML = `
-          <div class="no-matches-message">
-            <h3>No users found</h3>
-            <p>${responseData.message}</p>
-            <button onclick="window.location.href='preferences.html'" class="adjust-preferences-btn">
-              Adjust Preferences
-            </button>
-          </div>
-        `;
-        return;
-      }
+      
+      // Don't return here - let renderProfiles() handle showing the message only for "all" section
     }
 
     // Filter out already selected, removed, or accepted profiles
@@ -131,7 +119,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div class="no-matches-message">
             <h3>No users found</h3>
             <p>No users found matching your preferences. Try adjusting your gender, location, or age range preferences.</p>
-            <button onclick="window.location.href='preferences.html'" class="adjust-preferences-btn">
+            <button onclick="window.location.href='preferences.html?adjust=true'" class="adjust-preferences-btn">
               Adjust Preferences
             </button>
           </div>
@@ -300,9 +288,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     if (action === 'edit') {
-      viewProfileBtn.textContent = 'Update Preferences'; // Changed button text
+      viewProfileBtn.textContent = 'Adjust Preferences';
       viewProfileBtn.onclick = () => {
-        window.location.href = "preferences.html?edit=true"; // Redirect to preferences page in edit mode
+        window.location.href = "preferences.html?adjust=true"; // Redirect to preferences page in adjust mode
       };
     } else {
       viewProfileBtn.textContent = 'View Profile';

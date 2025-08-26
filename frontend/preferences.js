@@ -18,11 +18,9 @@
     spinnerOverlay.style.display = "none";
     
     // Update button text for adjust mode
-    if (adjustMode === 'true' || editMode === 'true') {
-      const submitButton = document.querySelector('button[type="submit"]');
-      if (submitButton) {
-        submitButton.textContent = 'Update Preferences';
-      }
+    const submitButton = document.querySelector('button[type="submit"]');
+    if (submitButton) {
+      submitButton.textContent = 'Update Preferences';
     }
     return;
   }
