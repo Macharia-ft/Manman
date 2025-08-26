@@ -21,11 +21,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Verify the reset token
   try {
-    const response = await fetch(`${config.API_BASE_URL}/api/auth/verify-reset-token?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`);
+    const response = await fetch(`${config.API_BASE_URL}/api/verify-reset-otp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email, otp })
+    });
     const result = await response.json();
 
-    if (!response.ok || !result.success) {
-      document.getElementById('error-message').textContent = result.message || 'Invalid or expired reset link. Please request a new password reset.';
+    if (!response.ok) {
+      document.getElementById('error-message').textContent = result.error || 'Invalid or expired reset link. Please request a new password reset.';
       document.getElementById('reset-form').style.display = 'none';
       return;
     }
