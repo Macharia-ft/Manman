@@ -1,4 +1,3 @@
-
 const { createClient } = require("@supabase/supabase-js");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
@@ -117,7 +116,7 @@ exports.updateUserStatus = async (req, res) => {
 
         const subject = status === "approved" ? "Profile Approved - Takeyours" : "Profile Update - Takeyours";
         const loginLink = `${process.env.FRONTEND_URL || 'http://0.0.0.0:5000'}/login.html`;
-        
+
         let emailContent;
         if (status === "approved") {
           emailContent = `
@@ -161,27 +160,46 @@ exports.updateUserStatus = async (req, res) => {
 
 // Get user by ID
 exports.getUserById = async (req, res) => {
-  const { id } = req.params;
-
   try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      return res.status(401).json({ success: false, message: "Missing token" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (!decoded.isAdmin) {
+      return res.status(403).json({ success: false, message: "Admin access required" });
+    }
+
+    const userId = req.params.id;
+
+    if (!userId) {
+      return res.status(400).json({ success: false, message: "User ID is required" });
+    }
+
     const { data, error } = await supabase
       .from('users')
       .select('*')
-      .eq('id', id)
+      .eq('id', userId)
       .single();
 
-    if (error) {
+    if (error && error.code !== 'PGRST116') {
       console.error("Get user error:", error.message);
-      return res.status(500).json({ success: false, message: "Server error" });
+      return res.status(500).json({ success: false, message: error.message });
     }
 
-    if (!data) {
+    if (!data || error?.code === 'PGRST116') {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
     res.json({ success: true, user: data });
   } catch (err) {
     console.error("Get user error:", err.message);
+    if (err.name === 'JsonWebTokenError') {
+      return res.status(401).json({ success: false, message: "Invalid token" });
+    }
     res.status(500).json({ success: false, message: "Server error" });
   }
 };

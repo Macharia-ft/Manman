@@ -21,10 +21,20 @@ async function loadUser() {
       }
     });
 
+    if (!res.ok) {
+      if (res.status === 401) {
+        alert("Session expired. Please login again.");
+        window.location.href = "admin-login.html";
+        return;
+      }
+      userInfoContainer.innerHTML = `❌ Error: ${res.status} - ${res.statusText}`;
+      return;
+    }
+
     const data = await res.json();
 
-    if (!res.ok || !data.user) {
-      userInfoContainer.innerHTML = "❌ User not found";
+    if (!data.success || !data.user) {
+      userInfoContainer.innerHTML = `❌ ${data.message || "User not found"}`;
       return;
     }
 
