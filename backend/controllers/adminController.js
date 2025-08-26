@@ -9,16 +9,18 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 // Email transporter setup
 let transporter;
 try {
-  if (process.env.GMAIL_USER && process.env.GMAIL_PASS) {
+  if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
     transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: process.env.EMAIL_HOST,
+      port: process.env.EMAIL_PORT,
+      secure: process.env.EMAIL_SECURE === 'true',
       auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASS,
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
       },
     });
   } else {
-    console.warn("⚠️ Gmail credentials not found. Email functionality disabled.");
+    console.warn("⚠️ Email credentials not found. Email functionality disabled.");
     transporter = null;
   }
 } catch (error) {
