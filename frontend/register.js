@@ -29,7 +29,7 @@ document.getElementById("registerForm").addEventListener("submit", async (e) => 
   }
 
   try {
-    const res = await fetch(`${config.API_BASE_URL}/send-otp`, {
+    const res = await fetch(`${config.API_BASE_URL}/api/send-otp`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"

@@ -48,18 +48,38 @@ router.post("/send-otp", async (req, res) => {
     const otp = generateOTP();
     storeOTP(email, otp);
 
-    await transporter.sendMail({
-      from: `"Takeyours" <${process.env.EMAIL_USER}>`,
+    console.log(`📧 Attempting to send OTP to: ${email}`);
+    console.log(`📧 Using sender email: ${process.env.EMAIL_USER || process.env.GMAIL_USER}`);
+    
+    const mailOptions = {
+      from: `"Takeyours" <${process.env.EMAIL_USER || process.env.GMAIL_USER}>`,
       to: email,
       subject: "Your Takeyours OTP Code",
-      html: `<p>Your OTP is <strong>${otp}</strong>. It expires in 5 minutes.</p>`
-    });
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Welcome to Takeyours!</h2>
+          <p>Your OTP verification code is:</p>
+          <div style="background: #f4f4f4; padding: 20px; text-align: center; margin: 20px 0;">
+            <h1 style="color: #007bff; margin: 0; font-size: 32px; letter-spacing: 5px;">${otp}</h1>
+          </div>
+          <p style="color: #666;">This code expires in 5 minutes.</p>
+          <p style="color: #666;">If you didn't request this code, please ignore this email.</p>
+        </div>
+      `
+    };
 
+    await transporter.sendMail(mailOptions);
+
+    console.log(`✅ OTP sent successfully to: ${email}`);
     incrementOTPAttempt(email);
     res.status(200).json({ message: "OTP sent successfully." });
   } catch (err) {
-    console.error("Send OTP error:", err.message);
-    res.status(500).json({ error: "Failed to send OTP. Try again later." });
+    console.error("📧 Send OTP error:", err);
+    console.error("📧 Email config:", {
+      user: process.env.EMAIL_USER || process.env.GMAIL_USER,
+      hasPass: !!(process.env.EMAIL_PASS || process.env.GMAIL_PASS)
+    });
+    res.status(500).json({ error: "Failed to send OTP. Please check your email address and try again." });
   }
 });
 
@@ -190,18 +210,33 @@ router.post("/forgot-password", async (req, res) => {
     const otp = generateOTP();
     storeOTP(email, otp);
 
-    await transporter.sendMail({
-      from: `"Takeyours" <${process.env.EMAIL_USER}>`,
+    console.log(`📧 Sending reset OTP to: ${email}`);
+    
+    const mailOptions = {
+      from: `"Takeyours" <${process.env.EMAIL_USER || process.env.GMAIL_USER}>`,
       to: email,
       subject: "Reset Your Password - OTP",
-      html: `<p>Your OTP to reset your password is <strong>${otp}</strong>. It expires in 5 minutes.</p>`
-    });
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Password Reset Request</h2>
+          <p>Your OTP to reset your password is:</p>
+          <div style="background: #f4f4f4; padding: 20px; text-align: center; margin: 20px 0;">
+            <h1 style="color: #007bff; margin: 0; font-size: 32px; letter-spacing: 5px;">${otp}</h1>
+          </div>
+          <p style="color: #666;">This code expires in 5 minutes.</p>
+          <p style="color: #666;">If you didn't request this reset, please ignore this email.</p>
+        </div>
+      `
+    };
 
+    await transporter.sendMail(mailOptions);
+
+    console.log(`✅ Reset OTP sent successfully to: ${email}`);
     incrementOTPAttempt(email);
     res.status(200).json({ message: "OTP sent." });
   } catch (err) {
-    console.error("Forgot password error:", err.message);
-    res.status(500).json({ error: "Failed to send OTP. Please try again later." });
+    console.error("📧 Forgot password error:", err);
+    res.status(500).json({ error: "Failed to send OTP. Please check your email address and try again." });
   }
 });
 
