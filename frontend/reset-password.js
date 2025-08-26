@@ -66,6 +66,7 @@ form.addEventListener("submit", async (e) => {
       },
       body: JSON.stringify({
         email: email,
+        otp: otp,
         newPassword: newPassword
       })
     });

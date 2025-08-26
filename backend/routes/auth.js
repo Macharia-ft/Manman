@@ -257,34 +257,16 @@ router.post("/verify-reset-otp", (req, res) => {
 
 // Reset password with OTP
 router.post("/reset-password", async (req, res) => {
-  const { email, otp, newPassword } = req.body;
+  const { email, newPassword } = req.body;
 
-  if (!email || !otp || !newPassword) {
+  if (!email || !newPassword) {
     return res.status(400).json({
       success: false,
-      message: "Email, OTP, and new password are required"
+      message: "Email and new password are required"
     });
   }
 
   try {
-    // Get stored OTP
-    const storedOTPData = otpStore.get(email);
-
-    if (!storedOTPData) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid or expired reset link. Please request a new password reset."
-      });
-    }
-
-    // Check if OTP matches and hasn't expired
-    if (storedOTPData.otp !== otp || Date.now() > storedOTPData.expiresAt) {
-      otpStore.delete(email); // Clean up expired OTP
-      return res.status(400).json({
-        success: false,
-        message: "Invalid or expired reset link. Please request a new password reset."
-      });
-    }
 
     // Update password in database
     const { error } = await supabase
@@ -299,9 +281,6 @@ router.post("/reset-password", async (req, res) => {
         message: "Failed to update password"
       });
     }
-
-    // Clear the OTP after successful password reset
-    otpStore.delete(email);
 
     console.log("✅ Password reset successfully for:", email);
     res.json({
@@ -330,9 +309,23 @@ router.get("/verify-reset-token", async (req, res) => {
   }
 
   try {
-    const storedOTPData = otpStore.get(email);
+    // Check if user exists
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('email')
+      .eq('email', email)
+      .single();
 
-    if (!storedOTPData || storedOTPData.otp !== otp || Date.now() > storedOTPData.expiresAt) {
+    if (error || !user) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid reset link"
+      });
+    }
+
+    // Verify OTP
+    const isValid = verifyOTP(email, otp);
+    if (!isValid) {
       return res.status(400).json({
         success: false,
         message: "Invalid or expired reset link"
