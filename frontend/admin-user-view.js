@@ -15,7 +15,7 @@ if (!token) {
 
 async function loadUser() {
   try {
-    const res = await fetch(`${config.API_BASE_URL}/api/admin/user/${userId}`, {
+    const res = await fetch(`${config.API_BASE_URL}/api/admin/users/${userId}`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
