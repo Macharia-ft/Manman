@@ -31,10 +31,10 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // Helper function to upload to Cloudinary
-async function uploadToCloudinary(filePath, folder) {
+async function uploadToCloudinary(filePath, folder, mimeType) {
   try {
     const result = await cloudinary.uploader.upload(filePath, {
-      resource_type: file.mimetype.startsWith("video") ? "video" : "image",
+      resource_type: mimeType && mimeType.startsWith("video") ? "video" : "image",
       folder: folder,
     });
     return { url: result.secure_url, public_id: result.public_id };
@@ -238,7 +238,7 @@ module.exports = {
         try {
           // Upload profile photo if provided
           if (profilePhoto && profilePhoto.length > 0) {
-            const photoUploadResult = await uploadToCloudinary(profilePhoto[0].path, "profile_photos");
+            const photoUploadResult = await uploadToCloudinary(profilePhoto[0].path, "profile_photos", profilePhoto[0].mimetype);
             profilePhotoUrl = photoUploadResult.url;
             profilePhotoPublicId = photoUploadResult.public_id;
             fs.unlink(profilePhoto[0].path, () => {}); // Delete temp file
@@ -247,7 +247,7 @@ module.exports = {
 
           // Upload profile video if provided
           if (profileVideo && profileVideo.length > 0) {
-            const videoUploadResult = await uploadToCloudinary(profileVideo[0].path, "profile_videos");
+            const videoUploadResult = await uploadToCloudinary(profileVideo[0].path, "profile_videos", profileVideo[0].mimetype);
             profileVideoUrl = videoUploadResult.url;
             profileVideoPublicId = videoUploadResult.public_id;
             fs.unlink(profileVideo[0].path, () => {}); // Delete temp file

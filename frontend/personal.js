@@ -1,10 +1,24 @@
+
+function isTokenExpired(token) {
+  if (!token) return true;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const now = Math.floor(Date.now() / 1000);
+    return payload.exp && payload.exp < now;
+  } catch (e) {
+    console.error("Token check failed:", e);
+    return true;
+  }
+}
+
+// Check authentication and redirect if necessary
 (async () => {
   const token = localStorage.getItem("token");
   const spinnerOverlay = document.getElementById("spinnerOverlay");
 
-  if (!token) {
-    window.location.href = "login.html";
-    return;
+  if (!token || isTokenExpired(token)) {
+    localStorage.removeItem("token");
+    return (window.location.href = "login.html");
   }
 
   try {
@@ -18,22 +32,16 @@
     const step = data.current_step || "identity";
     const status = data.status || "pending";
 
-    if (status === "approved") {
-      window.location.href = "dashboard_page.html";
-      return;
-    }
-
-    if (status === "disapproved") {
-      window.location.href = "submission.html";
-      return;
-    }
+    if (status === "approved") return (window.location.href = "dashboard_page.html");
+    if (status === "disapproved") return (window.location.href = "submission.html");
 
     if (step !== "personal") {
-      if (step === "identity") window.location.href = "identity-verification.html";
-      else if (step === "preferences") window.location.href = "preferences.html";
-      else if (step === "submission") window.location.href = "submission.html";
-      else window.location.href = "identity-verification.html";
-      return;
+      const map = {
+        identity: "identity-verification.html",
+        preferences: "preferences.html",
+        submission: "submission.html"
+      };
+      return (window.location.href = map[step] || "personal.html");
     }
 
     spinnerOverlay.style.display = "none";
@@ -44,114 +52,118 @@
   }
 })();
 
-const form = document.getElementById("personalForm");
-
-form.addEventListener("submit", async (e) => {
+// Handle form submission
+document.getElementById("personalForm").addEventListener("submit", async function(e) {
   e.preventDefault();
-
+  
   const token = localStorage.getItem("token");
-  if (!token) {
+  if (!token || isTokenExpired(token)) {
+    alert("Session expired. Please log in again.");
     window.location.href = "login.html";
     return;
   }
 
-  // Get file inputs
-  const profilePhotoInput = document.getElementById("profilePhoto");
-  const profileVideoInput = document.getElementById("profileVideo");
-
-  if (!profilePhotoInput.files[0]) {
-    alert("Profile photo is required!");
-    return;
-  }
-
-  // Show loading state
-  const submitBtn = form.querySelector('button[type="submit"]');
-  const originalText = submitBtn.textContent;
-  submitBtn.textContent = "Uploading...";
+  const submitBtn = document.getElementById("submitBtn");
+  const spinner = document.getElementById("submitSpinner");
+  
   submitBtn.disabled = true;
+  spinner.style.display = "inline-block";
 
-  const formData = new FormData();
-
-  // Add files
-  formData.append("profilePhoto", profilePhotoInput.files[0]);
-  if (profileVideoInput.files[0]) {
-    formData.append("profileVideo", profileVideoInput.files[0]);
-  }
-
-  // Add form data
-  const personalFormData = new FormData(form);
-  personalFormData.forEach((value, key) => {
-    if (key !== "profilePhoto" && key !== "profileVideo") {
-      if (key === "languages") {
-        if (!formData.has("languages[]")) {
-          formData.append("languages[]", value);
-        } else {
-          formData.append("languages[]", value);
-        }
-      } else {
-        formData.append(key, value);
-      }
-    }
-  });
-
-  // Validate video file
-  const videoFile = profileVideoInput.files[0];
-  if (videoFile) {
-    const maxSize = 200 * 1024 * 1024; // 200MB
-    if (videoFile.size > maxSize) {
-      alert("❌ Video file is too large. Please upload a video under 200MB.");
-      submitBtn.textContent = originalText;
-      submitBtn.disabled = false;
-      return;
-    }
-
-    // Check video duration
-    const video = document.createElement('video');
-    video.preload = 'metadata';
-
-    video.onloadedmetadata = function() {
-      window.URL.revokeObjectURL(video.src);
-      if (video.duration > 60) {
-        alert("❌ Video is too long. Please upload a video that is 1 minute or less.");
-        submitBtn.textContent = originalText;
-        submitBtn.disabled = false;
-        return;
-      }
-
-      // Continue with form submission
-      submitForm(formData, token, submitBtn, originalText);
-    }
-
-    video.src = URL.createObjectURL(videoFile);
-  } else {
-    submitForm(formData, token, submitBtn, originalText);
-  }
-});
-
-async function submitForm(formData, token, submitBtn, originalText) {
   try {
+    const formData = new FormData();
+    
+    // Add all form fields to FormData
+    const formElements = e.target.elements;
+    for (let element of formElements) {
+      if (element.name) {
+        if (element.type === 'file') {
+          if (element.files.length > 0) {
+            if (element.name === 'photo') {
+              formData.append('profilePhoto', element.files[0]);
+            } else if (element.name === 'video') {
+              formData.append('profileVideo', element.files[0]);
+            }
+          }
+        } else if (element.type === 'checkbox') {
+          if (element.checked) {
+            formData.append(element.name, element.value);
+          }
+        } else if (element.type !== 'submit') {
+          formData.append(element.name, element.value);
+        }
+      }
+    }
+
+    // Handle languages specially
+    const languageCheckboxes = document.querySelectorAll('input[name="languages[]"]:checked');
+    languageCheckboxes.forEach(checkbox => {
+      formData.append('languages[]', checkbox.value);
+    });
+
+    console.log("Submitting personal information...");
+
     const response = await fetch(`${config.API_BASE_URL}/api/user/personal`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}`,
+        'Authorization': `Bearer ${token}`
       },
-      body: formData,
+      body: formData
     });
 
     const result = await response.json();
 
-    if (response.ok) {
+    if (response.ok && result.success) {
+      console.log("✅ Personal information saved successfully");
+      alert("Personal information saved successfully!");
       window.location.href = "preferences.html";
     } else {
-      const errorData = await response.json();
-      alert(`Error: ${errorData.message || "Unknown error"}`);
+      console.error("❌ Save failed:", result.message);
+      alert(`Error: ${result.message || "Failed to save personal information"}`);
     }
+
   } catch (error) {
-    console.error("Error:", error);
-    alert("Network error. Please try again.");
+    console.error("❌ Submit error:", error);
+    alert("An error occurred while saving personal information. Please try again.");
   } finally {
-    // Reset button state
-    submitBtn.textContent = originalText;
     submitBtn.disabled = false;
+    spinner.style.display = "none";
   }
-}
+});
+
+// Handle file preview functionality
+document.querySelector('input[name="photo"]').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      let preview = document.getElementById('photoPreview');
+      if (!preview) {
+        preview = document.createElement('img');
+        preview.id = 'photoPreview';
+        preview.style.maxWidth = '200px';
+        preview.style.maxHeight = '200px';
+        preview.style.marginTop = '10px';
+        e.target.parentNode.appendChild(preview);
+      }
+      preview.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+document.querySelector('input[name="video"]').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (file) {
+    let preview = document.getElementById('videoPreview');
+    if (!preview) {
+      preview = document.createElement('video');
+      preview.id = 'videoPreview';
+      preview.controls = true;
+      preview.style.maxWidth = '300px';
+      preview.style.maxHeight = '200px';
+      preview.style.marginTop = '10px';
+      e.target.parentNode.appendChild(preview);
+    }
+    preview.src = URL.createObjectURL(file);
+  }
+});
