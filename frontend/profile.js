@@ -37,13 +37,22 @@ function displayUserProfile(data) {
     <div class="profile-info">
       <div class="profile-media">
         <div class="photo">
-          <img src="${publicData.profile_photo_url}" alt="Profile Picture" onclick="openFullscreenImage('${publicData.profile_photo_url}')">
+          ${publicData.profile_photo_url && publicData.profile_photo_url.trim() !== '' ? 
+            `<img src="${publicData.profile_photo_url}" alt="Profile Picture" onclick="openFullscreenImage('${publicData.profile_photo_url}')"
+                  onerror="console.error('❌ Profile photo failed:', this.src); this.src='https://via.placeholder.com/400?text=No+Photo';"
+                  onload="console.log('✅ Profile photo loaded:', this.src);">` : 
+            `<img src="https://via.placeholder.com/400?text=No+Photo" alt="No Profile Picture">`}
         </div>
         <div class="video">
-          <video controls onclick="openFullscreenVideo('${publicData.profile_video_url}')">
-            <source src="${publicData.profile_video_url}" type="video/mp4">
-            Your browser does not support the video tag.
-          </video>
+          ${publicData.profile_video_url && publicData.profile_video_url.trim() !== '' ? 
+            `<video controls onclick="openFullscreenVideo('${publicData.profile_video_url}')"
+                    onerror="console.error('❌ Profile video failed:', this.src); this.style.display='none'; this.nextElementSibling.style.display='block';"
+                    onloadstart="console.log('🎬 Profile video loading:', this.src);">
+              <source src="${publicData.profile_video_url}" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <p style="display:none; color:red;">Video failed to load</p>` : 
+            `<p>No video available</p>`}
         </div>
       </div>
       <div class="details">

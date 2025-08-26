@@ -36,13 +36,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (response.ok) {
       const data = await response.json();
       profile_photo_url = data.profile_photo_url;
+      console.log('✅ Current user profile photo URL:', profile_photo_url);
+    } else {
+      console.error('❌ Failed to fetch current user profile photo:', response.status);
     }
 
     const profileIcon = document.querySelector('.profile-icon img');
-    profileIcon.src = profile_photo_url || 'https://via.placeholder.com/100';
-    profileIcon.onerror = function() {
-      this.src = 'https://via.placeholder.com/100';
-    };
+    if (profileIcon) {
+      profileIcon.src = profile_photo_url && profile_photo_url.trim() !== '' ? profile_photo_url : 'https://via.placeholder.com/100?text=No+Photo';
+      profileIcon.onerror = function() {
+        console.error('❌ Profile icon failed to load:', this.src);
+        this.src = 'https://via.placeholder.com/100?text=No+Photo';
+      };
+      profileIcon.onload = function() {
+        console.log('✅ Profile icon loaded:', this.src);
+      };
+    }
 
     // Show the big profile photo when clicked
     profileIcon.addEventListener('click', () => {
@@ -134,11 +143,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     profilesToRender.forEach(user => {
-      const age = new Date().getFullYear() - new Date(user.dob).getFullYear();
-      const photoUrl = user.profile_photo_url || 'https://via.placeholder.com/100';
-      const videoUrl = user.profile_video_url || null;
+      const age = user.dob ? new Date().getFullYear() - new Date(user.dob).getFullYear() : 'Unknown';
+      const photoUrl = user.profile_photo_url && user.profile_photo_url.trim() !== '' ? user.profile_photo_url : 'https://via.placeholder.com/100?text=No+Photo';
+      const videoUrl = user.profile_video_url && user.profile_video_url.trim() !== '' ? user.profile_video_url : null;
       const countryOfBirth = user.country_of_birth || 'Unknown';
-      const matchScore = user.matchScore;
+      const matchScore = user.matchScore || '0%';
+
+      console.log(`🔍 Rendering user ${user.id}:`, {
+        photoUrl,
+        videoUrl,
+        full_name: user.full_name
+      });
 
       const userCard = document.createElement("div");
       userCard.classList.add("profile-card");
@@ -146,10 +161,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       userCard.innerHTML = `
         <div class="profile-info">
           <img src="${photoUrl}" alt="Profile" class="profile-pic" id="profilePic-${user.id}" 
-               onerror="console.error('Profile pic failed:', this.src); this.src='https://via.placeholder.com/100';" 
-               onload="console.log('Profile pic loaded:', this.src);">
+               onerror="console.error('❌ Profile pic failed for user ${user.id}:', this.src); this.src='https://via.placeholder.com/100?text=No+Photo';" 
+               onload="console.log('✅ Profile pic loaded for user ${user.id}:', this.src);">
           <div class="profile-details">
-            <h3>${user.full_name}</h3>
+            <h3>${user.full_name || 'Unknown Name'}</h3>
             <p>${age} yrs</p>
             <p>${countryOfBirth}</p>
           </div>
@@ -157,8 +172,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
         <div class="profile-video">
           ${videoUrl ? `<video src="${videoUrl}" controls preload="metadata" style="max-width: 100%; height: auto;" 
-               onerror="console.error('Profile video failed:', this.src); this.style.display='none'; this.nextElementSibling.style.display='block';" 
-               onloadstart="console.log('Profile video loading:', this.src);">
+               onerror="console.error('❌ Profile video failed for user ${user.id}:', this.src); this.style.display='none'; this.nextElementSibling.style.display='block';" 
+               onloadstart="console.log('🎬 Profile video loading for user ${user.id}:', this.src);" 
+               oncanplay="console.log('✅ Profile video ready for user ${user.id}');">
                </video>
                <p style="display:none; color:red;">Video failed to load</p>` : "<p>No video available</p>"}
         </div>

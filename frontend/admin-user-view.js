@@ -71,11 +71,12 @@ async function loadUser() {
         <p style="display:none; color:red;">Video failed to load</p>` : '<p>No liveness video</p>'}
 
       <h4>Profile Photo</h4>
-      ${user.profile_photo_url ? `
+      ${user.profile_photo_url && user.profile_photo_url.trim() !== '' ? `
         <img src="${user.profile_photo_url}" alt="Profile Photo" style="max-width: 400px; height: auto;" 
-             onerror="console.error('Profile photo failed to load:', this.src); this.style.display='none'; this.nextElementSibling.style.display='block';" 
-             onload="console.log('Profile photo loaded successfully');" />
-        <p style="display:none; color:red;">Image failed to load</p>` : '<p>No profile photo</p>'}
+             onerror="console.error('❌ Profile photo failed to load for user ${user.id}:', this.src); this.style.display='none'; this.nextElementSibling.style.display='block';" 
+             onload="console.log('✅ Profile photo loaded for user ${user.id}:', this.src);" />
+        <p style="display:none; color:red;">Image failed to load</p>
+        <p><strong>Profile Photo URL:</strong> ${user.profile_photo_url}</p>` : '<p>No profile photo uploaded</p>'}
     `;
   } catch (err) {
     userInfoContainer.innerHTML = "⚠️ Error loading user.";

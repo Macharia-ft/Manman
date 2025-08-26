@@ -761,60 +761,31 @@ module.exports = {
   },
 
   getUserProfilePhoto: async (req, res) => {
-    console.log("📦 Incoming /api/user/profile-photo request...");
-
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ success: false, message: "Missing token" });
-    }
-
-    const token = authHeader.split(" ")[1];
-    let decoded;
-
     try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET);
-      console.log("🔐 Authenticated:", decoded.email);
-    } catch (err) {
-      console.error("❌ Token verification failed:", err.message);
-      return res.status(401).json({ success: false, message: "Invalid token" });
-    }
+      const { email } = req.params;
+      console.log(`📦 Fetching profile photo for: ${email}`);
 
-    const userEmail = req.params.email || decoded.email;
-
-    try {
-      const { data: user, error } = await supabase
+      const { data, error } = await supabase
         .from('users')
         .select('profile_photo_url')
-        .eq('email', userEmail)
+        .eq('email', email)
         .single();
 
       if (error) {
-        console.error("🔥 Get Profile Photo Error:", error);
-        return res.status(500).json({
-          success: false,
-          message: error.message
-        });
+        console.error('❌ Supabase error:', error);
+        return res.status(404).json({ error: 'Profile photo not found' });
       }
 
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          message: "User not found"
-        });
+      if (!data) {
+        console.log('❌ No data found for user:', email);
+        return res.status(404).json({ error: 'User not found' });
       }
 
-      console.log("✅ Profile photo fetched for:", userEmail);
-      res.status(200).json({
-        success: true,
-        profile_photo_url: user.profile_photo_url || user.photo_url || 'https://via.placeholder.com/100'
-      });
-
+      console.log('✅ Profile photo URL:', data.profile_photo_url);
+      res.json({ profile_photo_url: data.profile_photo_url });
     } catch (error) {
-      console.error("🔥 Get profile photo error:", error.message);
-      res.status(500).json({
-        success: false,
-        message: "Server error during profile photo fetch"
-      });
+      console.error('❌ Error fetching profile photo:', error);
+      res.status(500).json({ error: 'Server error' });
     }
   },
 
