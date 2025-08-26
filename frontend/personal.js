@@ -22,7 +22,9 @@ function isTokenExpired(token) {
   }
 
   try {
-    spinnerOverlay.style.display = "flex";
+    if (spinnerOverlay) {
+      spinnerOverlay.style.display = "flex";
+    }
 
     const res = await fetch(`${config.API_BASE_URL}/api/user/progress`, {
       headers: { 
@@ -56,31 +58,43 @@ function isTokenExpired(token) {
       return (window.location.href = map[step] || "personal.html");
     }
 
-    spinnerOverlay.style.display = "none";
+    if (spinnerOverlay) {
+      spinnerOverlay.style.display = "none";
+    }
   } catch (err) {
     console.error("Progress check failed:", err.message);
-    spinnerOverlay.style.display = "none";
+    if (spinnerOverlay) {
+      spinnerOverlay.style.display = "none";
+    }
     // Don't redirect to login on API errors, just show the form
     console.log("Continuing with personal form despite progress check error");
   }
 })();
 
 // Handle form submission
-document.getElementById("personalForm").addEventListener("submit", async function(e) {
-  e.preventDefault();
+document.addEventListener('DOMContentLoaded', function() {
+  const personalForm = document.getElementById("personalForm");
   
-  const token = localStorage.getItem("token");
-  if (!token || isTokenExpired(token)) {
-    alert("Session expired. Please log in again.");
-    window.location.href = "login.html";
-    return;
-  }
+  if (personalForm) {
+    personalForm.addEventListener("submit", async function(e) {
+      e.preventDefault();
+      
+      const token = localStorage.getItem("token");
+      if (!token || isTokenExpired(token)) {
+        alert("Session expired. Please log in again.");
+        window.location.href = "login.html";
+        return;
+      }
 
-  const submitBtn = document.getElementById("submitBtn");
-  const spinner = document.getElementById("submitSpinner");
-  
-  submitBtn.disabled = true;
-  spinner.style.display = "inline-block";
+      const submitBtn = document.querySelector('button[type="submit"]');
+      const spinner = document.getElementById("spinner");
+      
+      if (submitBtn) {
+        submitBtn.disabled = true;
+      }
+      if (spinner) {
+        spinner.style.display = "inline-block";
+      }
 
   try {
     const formData = new FormData();
@@ -135,48 +149,67 @@ document.getElementById("personalForm").addEventListener("submit", async functio
     }
 
   } catch (error) {
-    console.error("❌ Submit error:", error);
-    alert("An error occurred while saving personal information. Please try again.");
-  } finally {
-    submitBtn.disabled = false;
-    spinner.style.display = "none";
+      console.error("❌ Submit error:", error);
+      alert("An error occurred while saving personal information. Please try again.");
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+      }
+      if (spinner) {
+        spinner.style.display = "none";
+      }
+    }
+    });
   }
 });
 
 // Handle file preview functionality
-document.querySelector('input[name="photo"]').addEventListener('change', function(e) {
-  const file = e.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      let preview = document.getElementById('photoPreview');
-      if (!preview) {
-        preview = document.createElement('img');
-        preview.id = 'photoPreview';
-        preview.style.maxWidth = '200px';
-        preview.style.maxHeight = '200px';
-        preview.style.marginTop = '10px';
-        e.target.parentNode.appendChild(preview);
+document.addEventListener('DOMContentLoaded', function() {
+  const photoInput = document.querySelector('input[name="photo"]');
+  const videoInput = document.querySelector('input[name="video"]');
+  
+  if (photoInput) {
+    photoInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          let preview = document.getElementById('photoPreview');
+          if (!preview) {
+            preview = document.createElement('img');
+            preview.id = 'photoPreview';
+            preview.style.maxWidth = '200px';
+            preview.style.maxHeight = '200px';
+            preview.style.marginTop = '10px';
+            if (e.target.parentNode) {
+              e.target.parentNode.appendChild(preview);
+            }
+          }
+          preview.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
       }
-      preview.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+    });
   }
-});
 
-document.querySelector('input[name="video"]').addEventListener('change', function(e) {
-  const file = e.target.files[0];
-  if (file) {
-    let preview = document.getElementById('videoPreview');
-    if (!preview) {
-      preview = document.createElement('video');
-      preview.id = 'videoPreview';
-      preview.controls = true;
-      preview.style.maxWidth = '300px';
-      preview.style.maxHeight = '200px';
-      preview.style.marginTop = '10px';
-      e.target.parentNode.appendChild(preview);
-    }
-    preview.src = URL.createObjectURL(file);
+  if (videoInput) {
+    videoInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        let preview = document.getElementById('videoPreview');
+        if (!preview) {
+          preview = document.createElement('video');
+          preview.id = 'videoPreview';
+          preview.controls = true;
+          preview.style.maxWidth = '300px';
+          preview.style.maxHeight = '200px';
+          preview.style.marginTop = '10px';
+          if (e.target.parentNode) {
+            e.target.parentNode.appendChild(preview);
+          }
+        }
+        preview.src = URL.createObjectURL(file);
+      }
+    });
   }
 });
