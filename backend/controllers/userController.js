@@ -537,6 +537,7 @@ module.exports = {
     const userEmail = decoded.email;
 
     try {
+      // Complete reset - only keep email and password, everything else becomes null
       const { data, error } = await supabase
         .from('users')
         .update({
@@ -581,7 +582,9 @@ module.exports = {
           id_back_url: null,
           liveness_video_url: null,
           national_id_number: null,
-          is_complete: false
+          is_complete: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
         .eq('email', userEmail)
         .select();
@@ -594,10 +597,10 @@ module.exports = {
         });
       }
 
-      console.log("✅ User submission reset successfully for:", userEmail);
+      console.log("✅ User submission completely reset for:", userEmail);
       res.status(200).json({
         success: true,
-        message: "User submission reset successfully"
+        message: "User submission completely reset - starting fresh as new user"
       });
 
     } catch (err) {

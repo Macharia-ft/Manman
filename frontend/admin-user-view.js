@@ -110,12 +110,25 @@ async function updateStatus(newStatus) {
     const data = await res.json();
 
     if (res.ok) {
-      statusText.textContent = `✅ User marked as ${newStatus}. Email sent with login link.`;
+      if (newStatus === "approved") {
+        statusText.innerHTML = `✅ User approved! User will be redirected to dashboard on next login. Email sent with login link.`;
+        statusText.style.color = "#2ecc71";
+      } else {
+        statusText.innerHTML = `❌ User disapproved! User will see submission page with "Upload Again" button on next login. Email sent with instructions.`;
+        statusText.style.color = "#e74c3c";
+      }
+      
+      // Disable buttons after action
+      approveBtn.disabled = true;
+      disapproveBtn.disabled = true;
+      adminMessageInput.disabled = true;
     } else {
       statusText.textContent = `❌ Error: ${data.message}`;
+      statusText.style.color = "#e74c3c";
     }
   } catch (err) {
     statusText.textContent = "❌ Server error";
+    statusText.style.color = "#e74c3c";
     console.error(err);
   }
 }
@@ -152,9 +165,6 @@ async function triggerReset(endpoint) {
 
 approveBtn.addEventListener("click", () => updateStatus("approved"));
 
-disapproveBtn.addEventListener("click", async () => {
-  await updateStatus("disapproved");
-  await triggerReset("reset-submission");
-});
+disapproveBtn.addEventListener("click", () => updateStatus("disapproved"));
 
 loadUser();

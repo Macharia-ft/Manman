@@ -10,29 +10,17 @@ const token = localStorage.getItem("token");
 uploadAgainBtn.addEventListener("click", async () => {
   if (!token) return (window.location.href = "login.html");
 
+  // Confirm action with user
+  const confirmReset = confirm("⚠️ This will delete all your submitted data and restart the verification process from the beginning. Are you sure you want to continue?");
+  if (!confirmReset) return;
+
   spinnerOverlay.style.display = "flex";
   uploadAgainBtn.disabled = true;
+  uploadAgainBtn.textContent = "🔄 Resetting...";
 
   try {
-    const statusRes = await fetch(`${config.API_BASE_URL}/api/user/status`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    const statusData = await statusRes.json();
-    const message = statusData.adminMessage || "";
-
-    let endpoint = "reset-submission"; // default
-    let redirectTo = "identity-verification.html";
-
-    if (message.toLowerCase().includes("identity")) {
-      endpoint = "reset-identity";
-      redirectTo = "identity-verification.html";
-    } else if (message.toLowerCase().includes("personal")) {
-      endpoint = "reset-personal";
-      redirectTo = "personal.html";
-    }
-
-    const resetRes = await fetch(`${config.API_BASE_URL}/api/user/${endpoint}`, {
+    // Always use complete reset for upload again
+    const resetRes = await fetch(`${config.API_BASE_URL}/api/user/reset-submission`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -42,14 +30,18 @@ uploadAgainBtn.addEventListener("click", async () => {
     spinnerOverlay.style.display = "none";
 
     if (resetRes.ok && resetData.success) {
-      window.location.href = redirectTo;
+      // Show success message and redirect to identity verification
+      alert("✅ All data has been reset successfully. You will now restart the verification process.");
+      window.location.href = "identity-verification.html";
     } else {
       uploadAgainBtn.disabled = false;
+      uploadAgainBtn.textContent = "🔄 Upload Again";
       alert("❌ Failed to reset: " + (resetData.message || "Unknown error."));
     }
   } catch (err) {
     spinnerOverlay.style.display = "none";
     uploadAgainBtn.disabled = false;
+    uploadAgainBtn.textContent = "🔄 Upload Again";
     console.error("❌ Reset error:", err);
     alert("❌ Network error during reset.");
   }
@@ -74,7 +66,7 @@ uploadAgainBtn.addEventListener("click", async () => {
     const step = progressData.current_step || "identity";
     const status = progressData.status || "pending";
 
-    if (status === "approved") {
+    if (status === "approved" || step === "dashboard") {
       window.location.href = "dashboard_page.html";
       return;
     }
@@ -100,8 +92,12 @@ uploadAgainBtn.addEventListener("click", async () => {
         }
       }
 
-      reviewMessage.textContent = "❌ Your submission was disapproved by admin.";
+      reviewMessage.innerHTML = `
+        ❌ <strong>Your submission was disapproved by admin.</strong><br>
+        Please read the admin message above and use the "Upload Again" button to restart your verification process.
+      `;
       uploadAgainBtn.style.display = "inline-block";
+      uploadAgainBtn.textContent = "🔄 Upload Again";
     } else {
       reviewMessage.textContent = "🎉 Congratulations! Your registration is complete. Your profile is under review by our admin team. You will receive an email notification once approved. This process typically takes up to 24 hours.";
       uploadAgainBtn.style.display = "none";

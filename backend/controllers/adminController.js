@@ -84,13 +84,24 @@ exports.updateUserStatus = async (req, res) => {
   }
 
   try {
+    let updateData = {
+      status: status,
+      admin_message: adminMessage || null,
+      updated_at: new Date().toISOString()
+    };
+
+    // If approved, set current_step to dashboard
+    if (status === "approved") {
+      updateData.current_step = "dashboard";
+    }
+    // If disapproved, keep current_step as submission for upload again functionality
+    else if (status === "disapproved") {
+      updateData.current_step = "submission";
+    }
+
     const { data, error } = await supabase
       .from('users')
-      .update({ 
-        status: status,
-        admin_message: adminMessage || null,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', userId)
       .select();
 
@@ -114,23 +125,24 @@ exports.updateUserStatus = async (req, res) => {
           return res.json({ success: true, message: "User status updated successfully (email invalid)" });
         }
 
-        const subject = status === "approved" ? "Profile Approved - Takeyours" : "Profile Update - Takeyours";
+        const subject = status === "approved" ? "Profile Approved - Takeyours" : "Profile Disapproved - Takeyours";
         const loginLink = `${process.env.FRONTEND_URL || 'http://0.0.0.0:5000'}/login.html`;
 
         let emailContent;
         if (status === "approved") {
           emailContent = `
-            <h2>Congratulations! Your profile has been approved.</h2>
-            <p>You can now access your dashboard and start using Takeyours.</p>
-            <p><a href="${loginLink}" style="background-color: #2ecc71; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Login to Dashboard</a></p>
+            <h2>🎉 Congratulations! Your profile has been approved.</h2>
+            <p>You can now access your dashboard and start using Takeyours to find your perfect match.</p>
+            <p><strong>Admin Message:</strong> ${adminMessage || 'Welcome to Takeyours!'}</p>
+            <p><a href="${loginLink}" style="background-color: #2ecc71; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 10px;">Access Your Dashboard</a></p>
           `;
         } else {
           emailContent = `
-            <h2>Profile Update Required</h2>
-            <p>Your profile submission needs some updates.</p>
-            ${adminMessage ? `<p><strong>Admin Message:</strong> ${adminMessage}</p>` : ''}
-            <p>Please login and resubmit your information.</p>
-            <p><a href="${loginLink}" style="background-color: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Login to Update</a></p>
+            <h2>❌ Profile Disapproved - Action Required</h2>
+            <p>Your profile submission has been disapproved and requires updates.</p>
+            <p><strong>Admin Message:</strong> ${adminMessage || 'Please review and resubmit your information.'}</p>
+            <p>Please login to your account and use the "Upload Again" button to restart your verification process.</p>
+            <p><a href="${loginLink}" style="background-color: #e74c3c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 10px;">Login to Resubmit</a></p>
           `;
         }
 
