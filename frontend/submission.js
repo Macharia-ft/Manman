@@ -1,4 +1,3 @@
-
 const uploadAgainBtn = document.getElementById("uploadAgainBtn");
 const adminMessageContainer = document.getElementById("adminMessageContainer");
 const adminMessageText = document.getElementById("adminMessageText");
@@ -101,37 +100,10 @@ uploadAgainBtn.addEventListener("click", async () => {
         }
       }
 
-      // Add upload again button for disapproved users
-      const uploadAgainBtn = document.createElement('button');
-      uploadAgainBtn.textContent = 'Upload Again';
-      uploadAgainBtn.className = 'upload-again-btn';
-      uploadAgainBtn.onclick = async () => {
-        try {
-          const resetRes = await fetch(`${config.API_BASE_URL}/api/user/reset-submission`, {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          
-          if (resetRes.ok) {
-            window.location.href = "identity-verification.html";
-          } else {
-            alert("Failed to reset submission. Please try again.");
-          }
-        } catch (error) {
-          alert("Network error. Please try again.");
-        }
-      };
-      
-      const mainContent = document.querySelector('.main-content');
-      if (mainContent) {
-        mainContent.appendChild(uploadAgainBtn);
-      }
-      }
-
       reviewMessage.textContent = "❌ Your submission was disapproved by admin.";
       uploadAgainBtn.style.display = "inline-block";
     } else {
-      reviewMessage.textContent = "⏳ Your profile is under review, please wait for approval and be aware it can take up to 24 hours.";
+      reviewMessage.textContent = "🎉 Congratulations! Your registration is complete. Your profile is under review by our admin team. You will receive an email notification once approved. This process typically takes up to 24 hours.";
       uploadAgainBtn.style.display = "none";
     }
 
@@ -141,6 +113,8 @@ uploadAgainBtn.addEventListener("click", async () => {
   } catch (err) {
     console.error("❌ Submission page error:", err.message);
     spinnerOverlay.style.display = "none";
-    window.location.href = "login.html";
+    // Show error message instead of redirecting
+    mainContent.style.display = "block";
+    reviewMessage.textContent = "❌ Unable to load submission status. Please refresh the page.";
   }
 })();
