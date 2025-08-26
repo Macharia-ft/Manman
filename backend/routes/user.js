@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const { 
-  getUserProgress, 
-  resetUserSubmission, 
-  resetIdentityOnly, 
+const {
+  getUserProgress,
+  resetUserSubmission,
+  resetIdentityOnly,
   resetPersonalOnly,
   savePersonalInfo,
   savePreferences,

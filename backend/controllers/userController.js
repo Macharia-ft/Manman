@@ -1,8 +1,10 @@
 require("dotenv").config({ path: "./backend/.env" });
 const jwt = require("jsonwebtoken");
-const fs = require("fs");
-const cloudinary = require("cloudinary").v2;
 const { createClient } = require("@supabase/supabase-js");
+const cloudinary = require("cloudinary").v2;
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 
 // Initialize Supabase client
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -15,6 +17,33 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+
+// Multer configuration for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/");
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
+});
+
+const upload = multer({ storage: storage });
+
+// Helper function to upload to Cloudinary
+async function uploadToCloudinary(filePath, folder) {
+  try {
+    const result = await cloudinary.uploader.upload(filePath, {
+      resource_type: file.mimetype.startsWith("video") ? "video" : "image",
+      folder: folder,
+    });
+    return { url: result.secure_url, public_id: result.public_id };
+  } catch (error) {
+    console.error("Cloudinary upload error:", error);
+    throw error;
+  }
+}
+
 
 module.exports = {
   uploadIdentity: async (req, res) => {
@@ -198,35 +227,90 @@ module.exports = {
         });
       }
 
-      // Get personal info from request body
-      const personalData = req.body;
+      // Use multer to handle the file uploads
+      upload.fields([{ name: 'profilePhoto', maxCount: 1 }, { name: 'profileVideo', maxCount: 1 }])(req, res, async (err) => {
+        if (err) {
+          console.error("❌ Multer error:", err);
+          return res.status(500).json({ success: false, message: "File upload failed" });
+        }
 
-      // Update user record with personal information
-      const updateData = {
-        ...personalData,
-        current_step: 'preferences',
-        updated_at: new Date().toISOString()
-      };
+        const { profilePhoto, profileVideo } = req.files;
 
-      const { error: updateError } = await supabase
-        .from('users')
-        .update(updateData)
-        .eq('email', userEmail);
+        let profilePhotoUrl = null;
+        let profileVideoUrl = null;
+        let profilePhotoPublicId = null;
+        let profileVideoPublicId = null;
 
-      if (updateError) {
-        console.error("🔥 Update Error:", updateError);
-        return res.status(500).json({
-          success: false,
-          message: updateError.message
+        try {
+          // Upload profile photo if provided
+          if (profilePhoto && profilePhoto.length > 0) {
+            const photoUploadResult = await uploadToCloudinary(profilePhoto[0].path, "profile_photos");
+            profilePhotoUrl = photoUploadResult.url;
+            profilePhotoPublicId = photoUploadResult.public_id;
+            fs.unlink(profilePhoto[0].path, () => {}); // Delete temp file
+            console.log("✅ Profile photo uploaded:", profilePhotoUrl);
+          }
+
+          // Upload profile video if provided
+          if (profileVideo && profileVideo.length > 0) {
+            const videoUploadResult = await uploadToCloudinary(profileVideo[0].path, "profile_videos");
+            profileVideoUrl = videoUploadResult.url;
+            profileVideoPublicId = videoUploadResult.public_id;
+            fs.unlink(profileVideo[0].path, () => {}); // Delete temp file
+            console.log("✅ Profile video uploaded:", profileVideoUrl);
+          }
+        } catch (uploadError) {
+          console.error("❌ File upload error:", uploadError);
+          return res.status(500).json({
+            success: false,
+            message: "File upload failed: " + uploadError.message
+          });
+        }
+
+        // Handle languages array
+        let languages = req.body['languages[]'];
+        if (typeof languages === 'string') {
+          languages = [languages];
+        }
+
+        const personalData = {
+          ...req.body,
+          languages: languages,
+          profile_photo_url: profilePhotoUrl,
+          profile_video_url: profileVideoUrl,
+          profile_photo_public_id: profilePhotoPublicId,
+          profile_video_public_id: profileVideoPublicId,
+          updated_at: new Date().toISOString(),
+          current_step: 'preferences'
+        };
+
+        // Remove file-related fields that shouldn't be in the database
+        delete personalData['languages[]'];
+        delete personalData.profilePhoto;
+        delete personalData.profileVideo;
+
+        // Update user record with personal information
+        const { error: updateError } = await supabase
+          .from('users')
+          .update(personalData)
+          .eq('email', userEmail);
+
+        if (updateError) {
+          console.error("🔥 Update Error:", updateError);
+          return res.status(500).json({
+            success: false,
+            message: updateError.message
+          });
+        }
+
+        console.log("✅ Personal info saved for:", userEmail);
+        res.status(200).json({
+          success: true,
+          message: "Personal information saved successfully",
+          current_step: 'preferences'
         });
-      }
-
-      console.log("✅ Personal info saved for:", userEmail);
-      res.status(200).json({
-        success: true,
-        message: "Personal information saved successfully",
-        current_step: 'preferences'
       });
+
 
     } catch (error) {
       console.error("🔥 Personal info save error:", error.message);

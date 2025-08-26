@@ -1,4 +1,3 @@
-
 (async () => {
   const token = localStorage.getItem("token");
   const spinnerOverlay = document.getElementById("spinnerOverlay");
@@ -46,73 +45,113 @@
 })();
 
 const form = document.getElementById("personalForm");
-const spinner = document.getElementById("spinner");
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
-  
+
+  const token = localStorage.getItem("token");
+  if (!token) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  // Get file inputs
+  const profilePhotoInput = document.getElementById("profilePhoto");
+  const profileVideoInput = document.getElementById("profileVideo");
+
+  if (!profilePhotoInput.files[0]) {
+    alert("Profile photo is required!");
+    return;
+  }
+
+  // Show loading state
+  const submitBtn = form.querySelector('button[type="submit"]');
+  const originalText = submitBtn.textContent;
+  submitBtn.textContent = "Uploading...";
+  submitBtn.disabled = true;
+
+  const formData = new FormData();
+
+  // Add files
+  formData.append("profilePhoto", profilePhotoInput.files[0]);
+  if (profileVideoInput.files[0]) {
+    formData.append("profileVideo", profileVideoInput.files[0]);
+  }
+
+  // Add form data
+  const personalFormData = new FormData(form);
+  personalFormData.forEach((value, key) => {
+    if (key !== "profilePhoto" && key !== "profileVideo") {
+      if (key === "languages") {
+        if (!formData.has("languages[]")) {
+          formData.append("languages[]", value);
+        } else {
+          formData.append("languages[]", value);
+        }
+      } else {
+        formData.append(key, value);
+      }
+    }
+  });
+
   // Validate video file
-  const videoFile = form.querySelector('input[name="video"]').files[0];
+  const videoFile = profileVideoInput.files[0];
   if (videoFile) {
     const maxSize = 200 * 1024 * 1024; // 200MB
     if (videoFile.size > maxSize) {
       alert("❌ Video file is too large. Please upload a video under 200MB.");
+      submitBtn.textContent = originalText;
+      submitBtn.disabled = false;
       return;
     }
-    
+
     // Check video duration
     const video = document.createElement('video');
     video.preload = 'metadata';
-    
+
     video.onloadedmetadata = function() {
       window.URL.revokeObjectURL(video.src);
       if (video.duration > 60) {
         alert("❌ Video is too long. Please upload a video that is 1 minute or less.");
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
         return;
       }
-      
+
       // Continue with form submission
-      submitForm();
+      submitForm(formData, token, submitBtn, originalText);
     }
-    
+
     video.src = URL.createObjectURL(videoFile);
   } else {
-    submitForm();
-  }
-  
-  async function submitForm() {
-    spinner.style.display = "block";
-
-    const formData = new FormData(form);
-    const token = localStorage.getItem("token");
-
-  if (!token) {
-      alert("❌ Session expired. Please log in again.");
-      spinner.style.display = "none";
-      return;
-    }
-
-    try {
-      const response = await fetch(`${config.API_BASE_URL}/api/user/personal`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-        body: formData
-      });
-
-      const result = await response.json();
-      spinner.style.display = "none";
-
-      if (response.ok && result.success) {
-        window.location.href = "preferences.html";
-      } else {
-        alert("❌ " + (result.message || "Unknown error occurred."));
-      }
-    } catch (error) {
-      spinner.style.display = "none";
-      alert("❌ Network error. Please try again.");
-      console.error("Submission error:", error);
-    }
+    submitForm(formData, token, submitBtn, originalText);
   }
 });
+
+async function submitForm(formData, token, submitBtn, originalText) {
+  try {
+    const response = await fetch(`${config.API_BASE_URL}/api/user/personal`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      window.location.href = "preferences.html";
+    } else {
+      const errorData = await response.json();
+      alert(`Error: ${errorData.message || "Unknown error"}`);
+    }
+  } catch (error) {
+    console.error("Error:", error);
+    alert("Network error. Please try again.");
+  } finally {
+    // Reset button state
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+  }
+}

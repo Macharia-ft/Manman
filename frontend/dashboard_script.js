@@ -43,11 +43,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const profileIcon = document.querySelector('.profile-icon img');
     if (profileIcon) {
-      profileIcon.src = profile_photo_url && profile_photo_url.trim() !== '' ? profile_photo_url : 'https://via.placeholder.com/100?text=No+Photo';
-      profileIcon.onerror = function() {
-        console.error('❌ Profile icon failed to load:', this.src);
-        this.src = 'https://via.placeholder.com/100?text=No+Photo';
-      };
+      // Set profile photo
+        const profilePhotoUrl = profile_photo_url || null; // Use fetched profile_photo_url
+        if (profilePhotoUrl && profilePhotoUrl !== 'null' && profilePhotoUrl !== null) {
+          profileIcon.src = profilePhotoUrl;
+          profileIcon.onerror = () => {
+            console.error("❌ Profile icon failed to load:", profilePhotoUrl);
+            profileIcon.src = "https://via.placeholder.com/100?text=No+Photo";
+          };
+        } else {
+          console.log("❌ No profile photo for current user.");
+          profileIcon.src = "https://via.placeholder.com/100?text=No+Photo";
+        }
       profileIcon.onload = function() {
         console.log('✅ Profile icon loaded:', this.src);
       };
@@ -75,7 +82,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Store the no users state
       allProfiles = [];
       localStorage.setItem(userStorageKey("allProfiles"), JSON.stringify(allProfiles));
-      
+
       // Don't return here - let renderProfiles() handle showing the message only for "all" section
     }
 
