@@ -227,14 +227,8 @@ module.exports = {
         });
       }
 
-      // Use multer to handle the file uploads
-      upload.fields([{ name: 'profilePhoto', maxCount: 1 }, { name: 'profileVideo', maxCount: 1 }])(req, res, async (err) => {
-        if (err) {
-          console.error("❌ Multer error:", err);
-          return res.status(500).json({ success: false, message: "File upload failed" });
-        }
-
-        const { profilePhoto, profileVideo } = req.files;
+      // Handle file uploads - check if files exist first
+      const { profilePhoto, profileVideo } = req.files || {};
 
         let profilePhotoUrl = null;
         let profileVideoUrl = null;
