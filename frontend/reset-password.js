@@ -1,10 +1,17 @@
 const form = document.getElementById("resetPasswordForm");
 const spinner = document.getElementById("spinner");
+let email, otp;
+
+function togglePassword(fieldId) {
+  const field = document.getElementById(fieldId);
+  const type = field.type === 'password' ? 'text' : 'password';
+  field.type = type;
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
   const urlParams = new URLSearchParams(window.location.search);
-  const email = urlParams.get('email');
-  const otp = urlParams.get('otp');
+  email = urlParams.get('email');
+  otp = urlParams.get('otp');
 
   if (!email || !otp) {
     document.getElementById('error-message').textContent = 'Invalid reset link. Please request a new password reset.';

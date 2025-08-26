@@ -71,6 +71,7 @@ let currentInterval;
 let stream = null;
 
 const instructions = ["Look up", "Look left", "Look right", "Smile", "Open your mouth"];
+let instructionsFollowed = [];
 
 function getRandomInstruction(prev) {
   let newInstruction;
@@ -113,12 +114,14 @@ function updateProgressBar() {
   let lastInstruction = "";
   const step = 50; // Changed from 20 to 50 (100/2 = 50 for 2 steps)
   const durationPerStep = 6000; // Keep same duration per instruction
+  instructionsFollowed = []; // Reset instructions
 
   currentInterval = setInterval(() => {
     progress += step;
     progressBar.style.width = `${progress}%`;
     const newInstruction = getRandomInstruction(lastInstruction);
     instructionText.textContent = newInstruction;
+    instructionsFollowed.push(newInstruction); // Track instruction
     lastInstruction = newInstruction;
 
     if (progress >= 100) {
@@ -195,6 +198,7 @@ submitBtn.onclick = async () => {
   formData.append("idBack", back);
   formData.append("video", videoBlob, `liveness_${Date.now()}.webm`);
   formData.append("userEmail", userEmail);
+  formData.append("livenessInstructions", JSON.stringify(instructionsFollowed));
 
   try {
     const response = await fetch(`${config.API_BASE_URL}/api/upload-identity`, {

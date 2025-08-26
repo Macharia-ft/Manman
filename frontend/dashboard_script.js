@@ -32,11 +32,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       headers: { Authorization: `Bearer ${token}` }
     });
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch the profile photo.');
+    let profile_photo_url = null;
+    if (response.ok) {
+      const data = await response.json();
+      profile_photo_url = data.profile_photo_url;
     }
-
-    const { profile_photo_url } = await response.json();
 
     const profileIcon = document.querySelector('.profile-icon img');
     profileIcon.src = profile_photo_url || 'https://via.placeholder.com/100';
@@ -145,7 +145,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       userCard.innerHTML = `
         <div class="profile-info">
-          <img src="${photoUrl}" alt="Profile" class="profile-pic" id="profilePic-${user.id}" onerror="this.src='https://via.placeholder.com/100';" onload="console.log('Image loaded:', this.src);">
+          <img src="${photoUrl}" alt="Profile" class="profile-pic" id="profilePic-${user.id}" 
+               onerror="console.error('Profile pic failed:', this.src); this.src='https://via.placeholder.com/100';" 
+               onload="console.log('Profile pic loaded:', this.src);">
           <div class="profile-details">
             <h3>${user.full_name}</h3>
             <p>${age} yrs</p>
@@ -154,7 +156,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           <span class="score">${matchScore}</span>
         </div>
         <div class="profile-video">
-          ${videoUrl ? `<video src="${videoUrl}" controls preload="metadata" onerror="console.error('Video failed to load:', this.src); this.style.display='none';" onloadstart="console.log('Video loading:', this.src);"></video>` : "<p>No video available</p>"}
+          ${videoUrl ? `<video src="${videoUrl}" controls preload="metadata" style="max-width: 100%; height: auto;" 
+               onerror="console.error('Profile video failed:', this.src); this.style.display='none'; this.nextElementSibling.style.display='block';" 
+               onloadstart="console.log('Profile video loading:', this.src);">
+               </video>
+               <p style="display:none; color:red;">Video failed to load</p>` : "<p>No video available</p>"}
         </div>
         <div class="profile-actions"></div>
       `;

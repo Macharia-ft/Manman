@@ -99,6 +99,7 @@ router.post("/upload-identity", upload.fields([
 
   const userEmail = decoded.email;
   const { idFront, idBack, video } = req.files;
+  const { livenessInstructions } = req.body;
 
   if (!idFront && !idBack && !video) {
     return res.status(400).json({
@@ -140,17 +141,28 @@ router.post("/upload-identity", upload.fields([
     }
 
     // Update user record in Supabase
+    const updateData = {
+      current_step: 'personal',
+      id_front_url: idFrontUrl,
+      id_back_url: idBackUrl,
+      liveness_video_url: livenessVideoUrl,
+      id_front_public_id: idFrontPublicId,
+      id_back_public_id: idBackPublicId,
+      liveness_public_id: livenessPublicId
+    };
+
+    // Add liveness instructions if provided
+    if (livenessInstructions) {
+      try {
+        updateData.liveness_instructions = JSON.parse(livenessInstructions);
+      } catch (e) {
+        updateData.liveness_instructions = livenessInstructions;
+      }
+    }
+
     const { data, error } = await supabase
       .from('users')
-      .update({
-        current_step: 'personal',
-        id_front_url: idFrontUrl,
-        id_back_url: idBackUrl,
-        liveness_video_url: livenessVideoUrl,
-        id_front_public_id: idFrontPublicId,
-        id_back_public_id: idBackPublicId,
-        liveness_public_id: livenessPublicId
-      })
+      .update(updateData)
       .eq('email', userEmail)
       .select();
 
