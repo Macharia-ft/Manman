@@ -169,7 +169,7 @@ exports.getUserById = async (req, res) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    if (!decoded.isAdmin) {
+    if (decoded.role !== 'admin') {
       return res.status(403).json({ success: false, message: "Admin access required" });
     }
 
