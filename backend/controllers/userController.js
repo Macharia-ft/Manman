@@ -228,38 +228,45 @@ module.exports = {
       }
 
       // Handle file uploads - check if files exist first
+      console.log("📁 Files received:", req.files);
       const { profilePhoto, profileVideo } = req.files || {};
 
-        let profilePhotoUrl = null;
-        let profileVideoUrl = null;
-        let profilePhotoPublicId = null;
-        let profileVideoPublicId = null;
+      let profilePhotoUrl = null;
+      let profileVideoUrl = null;
+      let profilePhotoPublicId = null;
+      let profileVideoPublicId = null;
 
-        try {
-          // Upload profile photo if provided
-          if (profilePhoto && profilePhoto.length > 0) {
-            const photoUploadResult = await uploadToCloudinary(profilePhoto[0].path, "profile_photos", profilePhoto[0].mimetype);
-            profilePhotoUrl = photoUploadResult.url;
-            profilePhotoPublicId = photoUploadResult.public_id;
-            fs.unlink(profilePhoto[0].path, () => {}); // Delete temp file
-            console.log("✅ Profile photo uploaded:", profilePhotoUrl);
-          }
-
-          // Upload profile video if provided
-          if (profileVideo && profileVideo.length > 0) {
-            const videoUploadResult = await uploadToCloudinary(profileVideo[0].path, "profile_videos", profileVideo[0].mimetype);
-            profileVideoUrl = videoUploadResult.url;
-            profileVideoPublicId = videoUploadResult.public_id;
-            fs.unlink(profileVideo[0].path, () => {}); // Delete temp file
-            console.log("✅ Profile video uploaded:", profileVideoUrl);
-          }
-        } catch (uploadError) {
-          console.error("❌ File upload error:", uploadError);
-          return res.status(500).json({
-            success: false,
-            message: "File upload failed: " + uploadError.message
+      try {
+        // Upload profile photo if provided
+        if (profilePhoto && profilePhoto.length > 0) {
+          console.log("📷 Uploading profile photo...");
+          const photoUploadResult = await uploadToCloudinary(profilePhoto[0].path, "profile_photos", profilePhoto[0].mimetype);
+          profilePhotoUrl = photoUploadResult.url;
+          profilePhotoPublicId = photoUploadResult.public_id;
+          fs.unlink(profilePhoto[0].path, (err) => {
+            if (err) console.error("Error deleting temp photo file:", err);
           });
+          console.log("✅ Profile photo uploaded:", profilePhotoUrl);
         }
+
+        // Upload profile video if provided
+        if (profileVideo && profileVideo.length > 0) {
+          console.log("🎥 Uploading profile video...");
+          const videoUploadResult = await uploadToCloudinary(profileVideo[0].path, "profile_videos", profileVideo[0].mimetype);
+          profileVideoUrl = videoUploadResult.url;
+          profileVideoPublicId = videoUploadResult.public_id;
+          fs.unlink(profileVideo[0].path, (err) => {
+            if (err) console.error("Error deleting temp video file:", err);
+          });
+          console.log("✅ Profile video uploaded:", profileVideoUrl);
+        }
+      } catch (uploadError) {
+        console.error("❌ File upload error:", uploadError);
+        return res.status(500).json({
+          success: false,
+          message: "File upload failed: " + uploadError.message
+        });
+      }
 
         // Handle languages array
         let languages = req.body['languages[]'];

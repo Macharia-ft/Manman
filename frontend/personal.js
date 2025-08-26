@@ -25,10 +25,22 @@ function isTokenExpired(token) {
     spinnerOverlay.style.display = "flex";
 
     const res = await fetch(`${config.API_BASE_URL}/api/user/progress`, {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     });
 
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
+
     const data = await res.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || 'Progress check failed');
+    }
+
     const step = data.current_step || "identity";
     const status = data.status || "pending";
 
@@ -46,9 +58,10 @@ function isTokenExpired(token) {
 
     spinnerOverlay.style.display = "none";
   } catch (err) {
-    console.error("Progress check failed:", err);
+    console.error("Progress check failed:", err.message);
     spinnerOverlay.style.display = "none";
-    window.location.href = "login.html";
+    // Don't redirect to login on API errors, just show the form
+    console.log("Continuing with personal form despite progress check error");
   }
 })();
 
