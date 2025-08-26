@@ -9,7 +9,7 @@ router.post("/admin/login", adminController.adminLogin);
 router.get("/admin/users", adminController.getAllUsers);
 
 // Update user status (admin only)
-router.put("/admin/users/status", adminController.updateUserStatus);
+router.post("/admin/user/status", adminController.updateUserStatus);
 
 // Get user by ID (admin only)
 router.get("/admin/users/:id", adminController.getUserById);
