@@ -111,8 +111,8 @@ startBtn.onclick = async () => {
 function updateProgressBar() {
   let progress = 0;
   let lastInstruction = "";
-  const step = 20;
-  const durationPerStep = 6000;
+  const step = 50; // Changed from 20 to 50 (100/2 = 50 for 2 steps)
+  const durationPerStep = 6000; // Keep same duration per instruction
 
   currentInterval = setInterval(() => {
     progress += step;
