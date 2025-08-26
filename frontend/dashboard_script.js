@@ -1,4 +1,3 @@
-
 document.addEventListener('DOMContentLoaded', async () => {
   const container = document.getElementById('user-container');
   const filterButtons = document.querySelectorAll('.filters button');
@@ -19,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Make local storage user-specific to prevent conflicts when multiple users use same device
   const userStorageKey = (key) => `${key}_${currentUserEmail}`;
-  
+
   let allProfiles = JSON.parse(localStorage.getItem(userStorageKey("allProfiles"))) || [];
   let selectedProfiles = JSON.parse(localStorage.getItem(userStorageKey("selectedProfiles"))) || [];
   let selectedYouProfiles = JSON.parse(localStorage.getItem(userStorageKey("selectedYouProfiles"))) || [];
@@ -58,13 +57,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const responseData = await userResponse.json();
-    
+
     // Handle new response format with pre-filtering - only for all profiles
     if (responseData.shouldAdjustPreferences) {
       // Store the no users state but don't show notification yet
       allProfiles = [];
       localStorage.setItem(userStorageKey("allProfiles"), JSON.stringify(allProfiles));
-      
+
       // Show notification only if we're currently viewing "all" section
       if (activeSection === "all") {
         container.innerHTML = `
@@ -80,8 +79,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
 
-    allProfiles = responseData.users || responseData;
-    allProfiles = allProfiles.filter(profile => 
+    // Filter out already selected, removed, or accepted profiles
+    allProfiles = (responseData.users || responseData).filter(profile => 
       !selectedProfiles.some(selected => selected.id === profile.id) &&
       !removedProfiles.some(removed => removed.id === profile.id) &&
       !acceptedProfiles.some(accepted => accepted.id === profile.id)
@@ -289,13 +288,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     floatingProfilePhoto.style.display = 'block';
     document.body.style.overflow = 'hidden';
 
+    // Add event listener for closing the floating profile
     closeProfileBtn.addEventListener('click', () => {
       floatingProfilePhoto.style.display = 'none';
       document.body.style.overflow = '';
     });
 
+    // Prevent clicks inside the floating profile from closing it
+    floatingProfilePhoto.querySelector('.floating-profile-content').addEventListener('click', (event) => {
+      event.stopPropagation();
+    });
+
     if (action === 'edit') {
-      viewProfileBtn.textContent = 'Edit Profile';
+      viewProfileBtn.textContent = 'Update Preferences'; // Changed button text
       viewProfileBtn.onclick = () => {
         window.location.href = "preferences.html?edit=true"; // Redirect to preferences page in edit mode
       };
@@ -320,7 +325,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!token) return null;
     const parts = token.split(".");
     if (parts.length !== 3) return null;
-    return JSON.parse(atob(parts[1]));
+    try {
+      return JSON.parse(atob(parts[1]));
+    } catch (e) {
+      console.error("Error decoding token:", e);
+      return null;
+    }
   }
 
   async function sendMatchRequest(user) {

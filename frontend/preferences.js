@@ -8,6 +8,25 @@
     return;
   }
 
+  // Check if we're in adjust mode (coming from dashboard)
+  const urlParams = new URLSearchParams(window.location.search);
+  const adjustMode = urlParams.get('adjust');
+  const editMode = urlParams.get('edit');
+  
+  // If in adjust or edit mode, skip progress check and go straight to form
+  if (adjustMode === 'true' || editMode === 'true') {
+    spinnerOverlay.style.display = "none";
+    
+    // Update button text for adjust mode
+    if (adjustMode === 'true') {
+      const submitButton = document.querySelector('button[type="submit"]');
+      if (submitButton) {
+        submitButton.textContent = 'Update Preferences';
+      }
+    }
+    return;
+  }
+
   try {
     spinnerOverlay.style.display = "flex";
 
@@ -102,12 +121,13 @@ form.addEventListener("submit", async (e) => {
     spinner.style.display = "none";
 
     if (response.ok && result.success) {
-      // Check if we're in edit mode (coming from dashboard)
+      // Check if we're in edit mode or adjust mode (coming from dashboard)
       const urlParams = new URLSearchParams(window.location.search);
       const editMode = urlParams.get('edit');
+      const adjustMode = urlParams.get('adjust');
       
-      if (editMode === 'true') {
-        // If editing preferences, redirect back to dashboard
+      if (editMode === 'true' || adjustMode === 'true') {
+        // If editing or adjusting preferences, redirect back to dashboard
         window.location.href = "dashboard_page.html";
       } else {
         // If new user, redirect to submission
