@@ -303,8 +303,6 @@ module.exports = {
           message: "Personal information saved successfully",
           current_step: 'preferences'
         });
-      });
-
 
     } catch (error) {
       console.error("🔥 Personal info save error:", error.message);
