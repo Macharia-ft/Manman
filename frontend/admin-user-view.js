@@ -62,7 +62,7 @@ async function loadUser() {
         <p style="display:none; color:red;">Image failed to load</p>` : '<p>No ID back image</p>'}
 
       <h4>Liveness Video</h4>
-      <p><strong>Instructions followed by user during recording:</strong> ${user.liveness_instructions ? user.liveness_instructions.join(', ') : 'Look up, Look left, Look right, Smile, Open your mouth'}</p>
+      <p><strong>Instructions followed by user during recording:</strong> ${user.liveness_instructions ? (Array.isArray(user.liveness_instructions) ? user.liveness_instructions.join(', ') : user.liveness_instructions) : 'Look up, Look left, Look right, Smile, Open your mouth'}</p>
       ${user.liveness_video_url ? `
         <video src="${user.liveness_video_url}" controls style="max-width: 400px; height: auto;" 
                onerror="console.error('Liveness video failed to load:', this.src); this.style.display='none'; this.nextElementSibling.style.display='block';" 
