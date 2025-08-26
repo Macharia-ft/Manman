@@ -321,6 +321,140 @@ module.exports = {
     }
   },
 
+  getCurrentPreferences: async (req, res) => {
+    console.log("📦 Incoming /api/user/current-preferences request...");
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ success: false, message: "Missing token" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    let decoded;
+
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log("🔐 Authenticated:", decoded.email);
+    } catch (err) {
+      console.error("❌ Token verification failed:", err.message);
+      return res.status(401).json({ success: false, message: "Invalid token" });
+    }
+
+    const userEmail = decoded.email;
+
+    try {
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', userEmail)
+        .single();
+
+      if (error) {
+        console.error("🔥 Get Preferences Error:", error);
+        return res.status(500).json({
+          success: false,
+          message: error.message
+        });
+      }
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found"
+        });
+      }
+
+      console.log("✅ Preferences fetched for:", userEmail);
+      res.status(200).json(user);
+
+    } catch (error) {
+      console.error("🔥 Get preferences error:", error.message);
+      res.status(500).json({
+        success: false,
+        message: "Server error during preferences fetch"
+      });
+    }
+  },
+
+  updatePreferences: async (req, res) => {
+    console.log("📦 Incoming /api/user/update-preferences request...");
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ success: false, message: "Missing token" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    let decoded;
+
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log("🔐 Authenticated:", decoded.email);
+    } catch (err) {
+      console.error("❌ Token verification failed:", err.message);
+      return res.status(401).json({ success: false, message: "Invalid token" });
+    }
+
+    const userEmail = decoded.email;
+
+    try {
+      // Check if user exists in Supabase
+      const { data: existingUser, error: checkError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', userEmail)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error("🔥 Update Preferences Error:", checkError);
+        return res.status(500).json({
+          success: false,
+          message: checkError.message
+        });
+      }
+
+      if (!existingUser) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found"
+        });
+      }
+
+      // Get preferences from request body (don't update current_step for existing users)
+      const preferencesData = req.body;
+      const updateData = {
+        ...preferencesData,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error: updateError } = await supabase
+        .from('users')
+        .update(updateData)
+        .eq('email', userEmail);
+
+      if (updateError) {
+        console.error("🔥 Update Error:", updateError);
+        return res.status(500).json({
+          success: false,
+          message: updateError.message
+        });
+      }
+
+      console.log("✅ Preferences updated for:", userEmail);
+      res.status(200).json({
+        success: true,
+        message: "Preferences updated successfully"
+      });
+
+    } catch (error) {
+      console.error("🔥 Preferences update error:", error.message);
+      res.status(500).json({
+        success: false,
+        message: "Server error during preferences update"
+      });
+    }
+  },
+
   getUserProgress: async (req, res) => {
     console.log("📦 Incoming /api/user/progress request...");
 
@@ -368,721 +502,213 @@ module.exports = {
       console.log("✅ Progress retrieved for:", userEmail, "Step:", user.current_step, "Status:", user.status);
       res.status(200).json({
         success: true,
-        current_step: user.current_step,
-        status: user.status
+        current_step: user.current_step || 'identity',
+        status: user.status || 'pending'
       });
 
-    } catch (error) {
-      console.error("🔥 Get progress error:", error.message);
+    } catch (err) {
+      console.error("🔥 Get progress error:", err.message);
       res.status(500).json({
         success: false,
         message: "Server error during progress retrieval"
       });
     }
-  }
-};
+  },
 
-const uploadIdentity = async (req, res) => {
-  console.log("📦 Incoming /api/upload-identity request...");
+  resetUserSubmission: async (req, res) => {
+    console.log("📦 Incoming /api/user/reset-submission request...");
 
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(401).json({ success: false, message: "Missing token" });
-  }
-
-  const token = authHeader.split(" ")[1];
-  let decoded;
-
-  try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("🔐 Authenticated:", decoded.email);
-  } catch (err) {
-    console.error("❌ Token verification failed:", err.message);
-    return res.status(401).json({ success: false, message: "Invalid token" });
-  }
-
-  const userEmail = decoded.email;
-
-  try {
-    // Check if user exists in Supabase
-    const { data: existingUser, error: checkError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', userEmail)
-      .single();
-
-    if (checkError && checkError.code !== 'PGRST116') {
-      console.error("🔥 Upload Identity Error:", checkError);
-      return res.status(500).json({
-        success: false,
-        message: checkError.message
-      });
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ success: false, message: "Missing token" });
     }
 
-    if (!existingUser) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found"
-      });
+    const token = authHeader.split(" ")[1];
+    let decoded;
+
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log("🔐 Authenticated:", decoded.email);
+    } catch (err) {
+      console.error("❌ Token verification failed:", err.message);
+      return res.status(401).json({ success: false, message: "Invalid token" });
     }
 
-    // Handle file uploads if present
-    let photoUrl = null;
-    let videoUrl = null;
+    const userEmail = decoded.email;
 
-    if (req.files) {
-      if (req.files.photo) {
-        const photoResult = await cloudinary.uploader.upload(req.files.photo.tempFilePath, {
-          folder: "takeyours/identity_photos",
-          resource_type: "image",
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .update({
+          current_step: 'identity',
+          status: 'pending',
+          admin_message: null,
+          full_name: null,
+          dob: null,
+          country_of_birth: null,
+          city_of_birth: null,
+          gender: null,
+          occupation: null,
+          education_level: null,
+          marital_status: null,
+          children_count: null,
+          hobbies: null,
+          interests: null,
+          bio: null,
+          profile_photo_url: null,
+          profile_video_url: null,
+          national_id_url: null,
+          selfie_url: null
+        })
+        .eq('email', userEmail)
+        .select();
+
+      if (error) {
+        console.error("🔥 Reset Submission Error:", error);
+        return res.status(500).json({
+          success: false,
+          message: error.message
         });
-        photoUrl = photoResult.secure_url;
-        fs.unlinkSync(req.files.photo.tempFilePath);
       }
 
-      if (req.files.video) {
-        const videoResult = await cloudinary.uploader.upload(req.files.video.tempFilePath, {
-          folder: "takeyours/identity_videos",
-          resource_type: "video",
+      console.log("✅ User submission reset successfully for:", userEmail);
+      res.status(200).json({
+        success: true,
+        message: "User submission reset successfully"
+      });
+
+    } catch (err) {
+      console.error("🔥 Reset Submission Error:", err.message);
+      res.status(500).json({
+        success: false,
+        message: "Server error during submission reset"
+      });
+    }
+  },
+
+  resetIdentityOnly: async (req, res) => {
+    console.log("📦 Incoming /api/user/reset-identity request...");
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ success: false, message: "Missing token" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    let decoded;
+
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log("🔐 Authenticated:", decoded.email);
+    } catch (err) {
+      console.error("❌ Token verification failed:", err.message);
+      return res.status(401).json({ success: false, message: "Invalid token" });
+    }
+
+    const userEmail = decoded.email;
+
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .update({
+          current_step: 'identity',
+          status: 'pending',
+          admin_message: null,
+          national_id_url: null,
+          selfie_url: null
+        })
+        .eq('email', userEmail)
+        .select();
+
+      if (error) {
+        console.error("🔥 Reset Identity Error:", error);
+        return res.status(500).json({
+          success: false,
+          message: error.message
         });
-        videoUrl = videoResult.secure_url;
-        fs.unlinkSync(req.files.video.tempFilePath);
       }
-    }
 
-    // Update user with identity information
-    const updateData = {
-      current_step: 'personal',
-      ...(photoUrl && { profile_photo_url: photoUrl }),
-      ...(videoUrl && { profile_video_url: videoUrl })
-    };
+      console.log("✅ Identity reset successfully for:", userEmail);
+      res.status(200).json({
+        success: true,
+        message: "Identity reset successfully"
+      });
 
-    const { data, error } = await supabase
-      .from('users')
-      .update(updateData)
-      .eq('email', userEmail)
-      .select();
-
-    if (error) {
-      console.error("🔥 Upload Identity Error:", error);
-      return res.status(500).json({
+    } catch (err) {
+      console.error("🔥 Reset Identity Error:", err.message);
+      res.status(500).json({
         success: false,
-        message: error.message
+        message: "Server error during identity reset"
       });
     }
+  },
 
-    console.log("✅ Identity uploaded successfully for:", userEmail);
-    res.status(200).json({
-      success: true,
-      message: "Identity uploaded successfully",
-      current_step: 'personal'
-    });
+  resetPersonalOnly: async (req, res) => {
+    console.log("📦 Incoming /api/user/reset-personal request...");
 
-  } catch (err) {
-    console.error("🔥 Upload Identity Error:", err.message);
-    res.status(500).json({
-      success: false,
-      message: "Server error during identity upload"
-    });
-  }
-};
-
-const savePersonalInfo = async (req, res) => {
-  console.log("📦 Incoming /api/user/personal request...");
-
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(401).json({ success: false, message: "Missing token" });
-  }
-
-  const token = authHeader.split(" ")[1];
-  let decoded;
-
-  try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("🔐 Authenticated:", decoded.email);
-  } catch (err) {
-    console.error("❌ Token verification failed:", err.message);
-    return res.status(401).json({ success: false, message: "Invalid token" });
-  }
-
-  const userEmail = decoded.email;
-
-  try {
-    // Check if user exists in Supabase
-    const { data: existingUser, error: checkError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', userEmail)
-      .single();
-
-    if (checkError && checkError.code !== 'PGRST116') {
-      console.error("🔥 Save Personal Info Error:", checkError);
-      return res.status(500).json({
-        success: false,
-        message: checkError.message
-      });
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ success: false, message: "Missing token" });
     }
 
-    if (!existingUser) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found"
-      });
+    const token = authHeader.split(" ")[1];
+    let decoded;
+
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log("🔐 Authenticated:", decoded.email);
+    } catch (err) {
+      console.error("❌ Token verification failed:", err.message);
+      return res.status(401).json({ success: false, message: "Invalid token" });
     }
 
-    // Handle file uploads if present
-    let photoUrl = null;
-    let videoUrl = null;
+    const userEmail = decoded.email;
 
-    if (req.files && req.files.length > 0) {
-      for (const file of req.files) {
-        if (file.fieldname === 'photo') {
-          const photoResult = await cloudinary.uploader.upload(file.path, {
-            folder: "takeyours/personal_photos",
-            resource_type: "image",
-          });
-          photoUrl = photoResult.secure_url;
-          fs.unlinkSync(file.path);
-        } else if (file.fieldname === 'video') {
-          const videoResult = await cloudinary.uploader.upload(file.path, {
-            folder: "takeyours/personal_videos",
-            resource_type: "video",
-          });
-          videoUrl = videoResult.secure_url;
-          fs.unlinkSync(file.path);
-        }
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .update({
+          current_step: 'personal',
+          status: 'pending',
+          admin_message: null,
+          full_name: null,
+          dob: null,
+          country_of_birth: null,
+          city_of_birth: null,
+          gender: null,
+          occupation: null,
+          education_level: null,
+          marital_status: null,
+          children_count: null,
+          hobbies: null,
+          interests: null,
+          bio: null,
+          profile_photo_url: null,
+          profile_video_url: null
+        })
+        .eq('email', userEmail)
+        .select();
+
+      if (error) {
+        console.error("🔥 Reset Personal Error:", error);
+        return res.status(500).json({
+          success: false,
+          message: error.message
+        });
       }
-    }
 
-    // Extract personal information from request body
-    // When using multer, form fields are in req.body and files are in req.files
-    const {
-      full_name,
-      dob,
-      country_of_birth,
-      city_of_birth,
-      country_of_residence,
-      county_of_residence,
-      willing_to_relocate,
-      languages,
-      preferred_language,
-      gender,
-      occupation,
-      employment_type,
-      education_level,
-      religion,
-      religious_importance,
-      political_views,
-      height,
-      weight,
-      skin_color,
-      body_type,
-      eye_color,
-      hair_color,
-      ethnicity,
-      diet,
-      smoking,
-      drinking,
-      exercise,
-      pets,
-      living_situation,
-      children,
-      orientation,
-      marital_status,
-      children_count,
-      hobbies,
-      interests,
-      bio
-    } = req.body;
+      console.log("✅ Personal info reset successfully for:", userEmail);
+      res.status(200).json({
+        success: true,
+        message: "Personal info reset successfully"
+      });
 
-    // Validate required fields before updating current_step
-    if (!full_name || !dob || !gender || !country_of_birth) {
-      return res.status(400).json({
+    } catch (err) {
+      console.error("🔥 Reset Personal Error:", err.message);
+      res.status(500).json({
         success: false,
-        message: "Missing required personal information fields"
+        message: "Server error during personal reset"
       });
     }
-
-    // Update user with personal information
-    const updateData = {
-      full_name,
-      dob,
-      country_of_birth,
-      country_of_residence,
-      county_of_residence,
-      city: city_of_birth,
-      willing_to_relocate,
-      languages,
-      preferred_language,
-      education: education_level,
-      occupation,
-      employment_type,
-      religion,
-      religious_importance,
-      political_views,
-      height: height ? parseInt(height) : null,
-      weight: weight ? parseInt(weight) : null,
-      skin_color,
-      body_type,
-      eye_color,
-      hair_color,
-      ethnicity,
-      diet,
-      smoking,
-      drinking,
-      exercise,
-      pets,
-      living_situation,
-      children,
-      gender,
-      orientation,
-      ...(photoUrl && { profile_photo_url: photoUrl }),
-      ...(videoUrl && { profile_video_url: videoUrl })
-    };
-
-    // Only update current_step if all required fields are filled
-    if (full_name && dob && gender && country_of_birth && occupation) {
-      updateData.current_step = 'preferences';
-    }
-
-    const { data, error } = await supabase
-      .from('users')
-      .update(updateData)
-      .eq('email', userEmail)
-      .select();
-
-    if (error) {
-      console.error("🔥 Save Personal Info Error:", error);
-      return res.status(500).json({
-        success: false,
-        message: error.message
-      });
-    }
-
-    console.log("✅ Personal info saved successfully for:", userEmail);
-    res.status(200).json({
-      success: true,
-      message: "Personal information saved successfully",
-      current_step: 'preferences'
-    });
-
-  } catch (err) {
-    console.error("🔥 Save Personal Info Error:", err.message);
-    res.status(500).json({
-      success: false,
-      message: "Server error during personal info save"
-    });
   }
-};
-
-const savePreferences = async (req, res) => {
-  console.log("📦 Incoming /api/user/preferences request...");
-
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(401).json({ success: false, message: "Missing token" });
-  }
-
-  const token = authHeader.split(" ")[1];
-  let decoded;
-
-  try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("🔐 Authenticated:", decoded.email);
-  } catch (err) {
-    console.error("❌ Token verification failed:", err.message);
-    return res.status(401).json({ success: false, message: "Invalid token" });
-  }
-
-  const userEmail = decoded.email;
-
-  try {
-    // Check if user exists in Supabase
-    const { data: existingUser, error: checkError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', userEmail)
-      .single();
-
-    if (checkError && checkError.code !== 'PGRST116') {
-      console.error("🔥 Save Preferences Error:", checkError);
-      return res.status(500).json({
-        success: false,
-        message: checkError.message
-      });
-    }
-
-    if (!existingUser) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found"
-      });
-    }
-
-    // Extract preferences from request body
-    const {
-      pref_gender,
-      pref_age_min,
-      pref_age_max,
-      pref_country_of_birth,
-      pref_country_of_residence,
-      pref_county_of_residence,
-      pref_country,
-      pref_languages,
-      pref_religion,
-      pref_religion_importance,
-      pref_height,
-      pref_weight,
-      pref_body_type,
-      pref_skin_color,
-      pref_ethnicity,
-      pref_diet,
-      pref_smoking,
-      pref_drinking,
-      pref_exercise,
-      pref_pets,
-      pref_children,
-      pref_living_situation,
-      pref_willing_to_relocate,
-      pref_relationship_type
-    } = req.body;
-
-    // Validate required preferences before updating current_step
-    if (!pref_gender || !pref_age_min || !pref_age_max) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing required preference fields"
-      });
-    }
-
-    // Update user with preferences
-    const updateData = {
-      pref_gender,
-      pref_age_min: pref_age_min ? parseInt(pref_age_min) : null,
-      pref_age_max: pref_age_max ? parseInt(pref_age_max) : null,
-      pref_country_of_birth,
-      pref_country_of_residence,
-      pref_county_of_residence,
-      pref_country,
-      pref_languages,
-      pref_religion,
-      pref_religion_importance,
-      pref_height,
-      pref_weight,
-      pref_body_type,
-      pref_skin_color,
-      pref_ethnicity,
-      pref_diet,
-      pref_smoking,
-      pref_drinking,
-      pref_exercise,
-      pref_pets,
-      pref_children,
-      pref_living_situation,
-      pref_willing_to_relocate,
-      pref_relationship_type
-    };
-
-    // Only update current_step if required preferences are filled
-    if (pref_gender && pref_age_min && pref_age_max) {
-      updateData.current_step = 'submission';
-      updateData.is_complete = true;
-    }
-
-    const { data, error } = await supabase
-      .from('users')
-      .update(updateData)
-      .eq('email', userEmail)
-      .select();
-
-    if (error) {
-      console.error("🔥 Save Preferences Error:", error);
-      return res.status(500).json({
-        success: false,
-        message: error.message
-      });
-    }
-
-    console.log("✅ Preferences saved successfully for:", userEmail);
-    res.status(200).json({
-      success: true,
-      message: "Preferences saved successfully",
-      current_step: 'submission'
-    });
-
-  } catch (err) {
-    console.error("🔥 Save Preferences Error:", err.message);
-    res.status(500).json({
-      success: false,
-      message: "Server error during preferences save"
-    });
-  }
-};
-
-const getUserProgress = async (req, res) => {
-  console.log("📦 Incoming /api/user/progress request...");
-
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(401).json({ success: false, message: "Missing token" });
-  }
-
-  const token = authHeader.split(" ")[1];
-  let decoded;
-
-  try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("🔐 Authenticated:", decoded.email);
-  } catch (err) {
-    console.error("❌ Token verification failed:", err.message);
-    return res.status(401).json({ success: false, message: "Invalid token" });
-  }
-
-  const userEmail = decoded.email;
-
-  try {
-    // Get user progress from Supabase
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('current_step, status')
-      .eq('email', userEmail)
-      .single();
-
-    if (error) {
-      console.error("🔥 Get Progress Error:", error);
-      return res.status(500).json({
-        success: false,
-        message: error.message
-      });
-    }
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found"
-      });
-    }
-
-    console.log("✅ Progress retrieved for:", userEmail, "Step:", user.current_step, "Status:", user.status);
-    res.status(200).json({
-      success: true,
-      current_step: user.current_step || 'identity',
-      status: user.status || 'pending'
-    });
-
-  } catch (err) {
-    console.error("🔥 Get Progress Error:", err.message);
-    res.status(500).json({
-      success: false,
-      message: "Server error during progress retrieval"
-    });
-  }
-};
-
-const resetUserSubmission = async (req, res) => {
-  console.log("📦 Incoming /api/user/reset-submission request...");
-
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(401).json({ success: false, message: "Missing token" });
-  }
-
-  const token = authHeader.split(" ")[1];
-  let decoded;
-
-  try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("🔐 Authenticated:", decoded.email);
-  } catch (err) {
-    console.error("❌ Token verification failed:", err.message);
-    return res.status(401).json({ success: false, message: "Invalid token" });
-  }
-
-  const userEmail = decoded.email;
-
-  try {
-    const { data, error } = await supabase
-      .from('users')
-      .update({
-        current_step: 'identity',
-        status: 'pending',
-        admin_message: null,
-        full_name: null,
-        dob: null,
-        country_of_birth: null,
-        city_of_birth: null,
-        gender: null,
-        occupation: null,
-        education_level: null,
-        marital_status: null,
-        children_count: null,
-        hobbies: null,
-        interests: null,
-        bio: null,
-        profile_photo_url: null,
-        profile_video_url: null,
-        national_id_url: null,
-        selfie_url: null
-      })
-      .eq('email', userEmail)
-      .select();
-
-    if (error) {
-      console.error("🔥 Reset Submission Error:", error);
-      return res.status(500).json({
-        success: false,
-        message: error.message
-      });
-    }
-
-    console.log("✅ User submission reset successfully for:", userEmail);
-    res.status(200).json({
-      success: true,
-      message: "User submission reset successfully"
-    });
-
-  } catch (err) {
-    console.error("🔥 Reset Submission Error:", err.message);
-    res.status(500).json({
-      success: false,
-      message: "Server error during submission reset"
-    });
-  }
-};
-
-const resetIdentityOnly = async (req, res) => {
-  console.log("📦 Incoming /api/user/reset-identity request...");
-
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(401).json({ success: false, message: "Missing token" });
-  }
-
-  const token = authHeader.split(" ")[1];
-  let decoded;
-
-  try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("🔐 Authenticated:", decoded.email);
-  } catch (err) {
-    console.error("❌ Token verification failed:", err.message);
-    return res.status(401).json({ success: false, message: "Invalid token" });
-  }
-
-  const userEmail = decoded.email;
-
-  try {
-    const { data, error } = await supabase
-      .from('users')
-      .update({
-        current_step: 'identity',
-        status: 'pending',
-        admin_message: null,
-        national_id_url: null,
-        selfie_url: null
-      })
-      .eq('email', userEmail)
-      .select();
-
-    if (error) {
-      console.error("🔥 Reset Identity Error:", error);
-      return res.status(500).json({
-        success: false,
-        message: error.message
-      });
-    }
-
-    console.log("✅ Identity reset successfully for:", userEmail);
-    res.status(200).json({
-      success: true,
-      message: "Identity reset successfully"
-    });
-
-  } catch (err) {
-    console.error("🔥 Reset Identity Error:", err.message);
-    res.status(500).json({
-      success: false,
-      message: "Server error during identity reset"
-    });
-  }
-};
-
-const resetPersonalOnly = async (req, res) => {
-  console.log("📦 Incoming /api/user/reset-personal request...");
-
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(401).json({ success: false, message: "Missing token" });
-  }
-
-  const token = authHeader.split(" ")[1];
-  let decoded;
-
-  try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("🔐 Authenticated:", decoded.email);
-  } catch (err) {
-    console.error("❌ Token verification failed:", err.message);
-    return res.status(401).json({ success: false, message: "Invalid token" });
-  }
-
-  const userEmail = decoded.email;
-
-  try {
-    const { data, error } = await supabase
-      .from('users')
-      .update({
-        current_step: 'personal',
-        status: 'pending',
-        admin_message: null,
-        full_name: null,
-        dob: null,
-        country_of_birth: null,
-        city_of_birth: null,
-        gender: null,
-        occupation: null,
-        education_level: null,
-        marital_status: null,
-        children_count: null,
-        hobbies: null,
-        interests: null,
-        bio: null,
-        profile_photo_url: null,
-        profile_video_url: null
-      })
-      .eq('email', userEmail)
-      .select();
-
-    if (error) {
-      console.error("🔥 Reset Personal Error:", error);
-      return res.status(500).json({
-        success: false,
-        message: error.message
-      });
-    }
-
-    console.log("✅ Personal info reset successfully for:", userEmail);
-    res.status(200).json({
-      success: true,
-      message: "Personal info reset successfully"
-    });
-
-  } catch (err) {
-    console.error("🔥 Reset Personal Error:", err.message);
-    res.status(500).json({
-      success: false,
-      message: "Server error during personal reset"
-    });
-  }
-};
-
-module.exports = {
-  uploadIdentity,
-  savePersonalInfo,
-  resetUserSubmission,
-  resetIdentityOnly,
-  resetPersonalOnly,
-  getUserProgress,
-  savePreferences
 };
