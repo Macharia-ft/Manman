@@ -32,5 +32,9 @@ router.post("/preferences", savePreferences);
 router.get("/current-preferences", getCurrentPreferences);
 router.post("/update-preferences", updatePreferences);
 router.get("/profile-photo/:email", getUserProfilePhoto);
+router.post("/update-media", personalUpload.fields([
+  { name: 'profilePhoto', maxCount: 1 },
+  { name: 'profileVideo', maxCount: 1 }
+]), require("../controllers/userController").updateMedia);
 
 module.exports = router;

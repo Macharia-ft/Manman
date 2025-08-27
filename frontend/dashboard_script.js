@@ -270,7 +270,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <button class="remove-btn">Cancel Match</button>
         `;
         actions.querySelector(".select-btn").addEventListener("click", () => {
-          window.location.href = "matches.html";
+          window.location.href = "charts.html";
         });
         actions.querySelector(".remove-btn").addEventListener("click", () => {
           allProfiles.push(user);
@@ -312,10 +312,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.body.style.overflow = 'hidden';
 
     // Add event listener for closing the floating profile
-    closeProfileBtn.addEventListener('click', () => {
+    closeProfileBtn.onclick = () => {
       floatingProfilePhoto.style.display = 'none';
       document.body.style.overflow = '';
-    });
+    };
 
     // Prevent clicks inside the floating profile from closing it
     floatingProfilePhoto.querySelector('.floating-profile-content').addEventListener('click', (event) => {
@@ -323,9 +323,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     if (action === 'edit') {
-      viewProfileBtn.textContent = 'Adjust Preferences';
+      viewProfileBtn.textContent = 'Edit Profile';
       viewProfileBtn.onclick = () => {
-        window.location.href = "adjust-preferences.html"; // Redirect to dedicated adjust preferences page
+        window.location.href = "edit-profile.html"; // Redirect to dedicated edit profile page
       };
     } else {
       viewProfileBtn.textContent = 'View Profile';

@@ -872,6 +872,116 @@ module.exports = {
     }
   },
 
+  updateMedia: async (req, res) => {
+    console.log("📦 Incoming /api/user/update-media request...");
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ success: false, message: "Missing token" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    let decoded;
+
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log("🔐 Authenticated:", decoded.email);
+    } catch (err) {
+      console.error("❌ Token verification failed:", err.message);
+      return res.status(401).json({ success: false, message: "Invalid token" });
+    }
+
+    const userEmail = decoded.email;
+
+    try {
+      const { data: existingUser, error: checkError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', userEmail)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error("🔥 Update Media Error:", checkError);
+        return res.status(500).json({
+          success: false,
+          message: checkError.message
+        });
+      }
+
+      if (!existingUser) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found"
+        });
+      }
+
+      // Handle file uploads
+      const { profilePhoto, profileVideo } = req.files || {};
+      let profilePhotoUrl = null;
+      let profileVideoUrl = null;
+
+      try {
+        if (profilePhoto && profilePhoto.length > 0) {
+          console.log("📷 Uploading new profile photo...");
+          const photoUploadResult = await uploadToCloudinary(profilePhoto[0].path, "profile_photos", profilePhoto[0].mimetype);
+          profilePhotoUrl = photoUploadResult.url;
+          fs.unlink(profilePhoto[0].path, (err) => {
+            if (err) console.error("Error deleting temp photo file:", err);
+          });
+        }
+
+        if (profileVideo && profileVideo.length > 0) {
+          console.log("🎥 Uploading new profile video...");
+          const videoUploadResult = await uploadToCloudinary(profileVideo[0].path, "profile_videos", profileVideo[0].mimetype);
+          profileVideoUrl = videoUploadResult.url;
+          fs.unlink(profileVideo[0].path, (err) => {
+            if (err) console.error("Error deleting temp video file:", err);
+          });
+        }
+      } catch (uploadError) {
+        console.error("❌ File upload error:", uploadError);
+        return res.status(500).json({
+          success: false,
+          message: "File upload failed: " + uploadError.message
+        });
+      }
+
+      // Create pending media update record
+      const updateData = {
+        user_email: userEmail,
+        pending_photo_url: profilePhotoUrl,
+        pending_video_url: profileVideoUrl,
+        status: 'pending',
+        requested_at: new Date().toISOString()
+      };
+
+      const { error: insertError } = await supabase
+        .from('pending_media_updates')
+        .insert(updateData);
+
+      if (insertError) {
+        console.error("🔥 Insert Error:", insertError);
+        return res.status(500).json({
+          success: false,
+          message: insertError.message
+        });
+      }
+
+      console.log("✅ Media update request submitted for:", userEmail);
+      res.status(200).json({
+        success: true,
+        message: "Media update request submitted for admin approval"
+      });
+
+    } catch (error) {
+      console.error("🔥 Media update error:", error.message);
+      res.status(500).json({
+        success: false,
+        message: "Server error during media update"
+      });
+    }
+  },
+
   // Send match request
   sendMatchRequest: async (req, res) => {
     try {
