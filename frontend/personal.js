@@ -105,10 +105,18 @@ document.addEventListener('DOMContentLoaded', function() {
       if (element.name) {
         if (element.type === 'file') {
           if (element.files.length > 0) {
-            if (element.name === 'photo') {
-              formData.append('profilePhoto', element.files[0]);
-            } else if (element.name === 'video') {
-              formData.append('profileVideo', element.files[0]);
+            const file = element.files[0];
+            
+            if (element.name === 'video') {
+              // Validate video file size and duration before submission
+              const maxSize = 100 * 1024 * 1024; // 100MB
+              if (file.size > maxSize) {
+                alert(`Video file is too large! Maximum size allowed is 100MB. Your file is ${(file.size / (1024 * 1024)).toFixed(2)}MB.`);
+                return;
+              }
+              formData.append('profileVideo', file);
+            } else if (element.name === 'photo') {
+              formData.append('profilePhoto', file);
             }
           }
         } else if (element.type === 'checkbox') {
@@ -196,6 +204,14 @@ document.addEventListener('DOMContentLoaded', function() {
     videoInput.addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (file) {
+        // Check file size (100MB = 100 * 1024 * 1024 bytes)
+        const maxSize = 100 * 1024 * 1024;
+        if (file.size > maxSize) {
+          alert(`Video file is too large! Maximum size allowed is 100MB. Your file is ${(file.size / (1024 * 1024)).toFixed(2)}MB.`);
+          e.target.value = ''; // Clear the input
+          return;
+        }
+
         let preview = document.getElementById('videoPreview');
         if (!preview) {
           preview = document.createElement('video');
@@ -208,7 +224,20 @@ document.addEventListener('DOMContentLoaded', function() {
             e.target.parentNode.appendChild(preview);
           }
         }
-        preview.src = URL.createObjectURL(file);
+        
+        const videoUrl = URL.createObjectURL(file);
+        preview.src = videoUrl;
+        
+        // Check video duration when metadata loads
+        preview.addEventListener('loadedmetadata', function() {
+          const duration = preview.duration;
+          if (duration > 30) {
+            alert(`Video is too long! Maximum duration allowed is 30 seconds. Your video is ${duration.toFixed(1)} seconds.`);
+            e.target.value = ''; // Clear the input
+            preview.src = '';
+            return;
+          }
+        });
       }
     });
   }

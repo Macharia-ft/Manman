@@ -7,7 +7,7 @@ const { savePersonalInfo } = require("../controllers/userController");
 // Configure multer for file uploads
 const upload = multer({
   dest: path.join(__dirname, "../temp"),
-  limits: { fileSize: 200 * 1024 * 1024 }, // 200MB limit
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit
 });
 
 // Personal info route with file upload support
