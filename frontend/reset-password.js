@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Verify the reset token
   try {
-    const response = await fetch(`${config.API_BASE_URL}/api/verify-reset-token?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`, {
+    const response = await fetch(`${config.API_BASE_URL}/api/verify-reset-token?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}&_t=${Date.now()}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'

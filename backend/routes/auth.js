@@ -333,8 +333,11 @@ router.post("/reset-password", async (req, res) => {
 // Verify reset token route
 router.get("/verify-reset-token", async (req, res) => {
   const { email, otp } = req.query;
+  
+  console.log("🔍 Verify reset token request:", { email, otp });
 
   if (!email || !otp) {
+    console.log("❌ Missing email or OTP in query params");
     return res.status(400).json({
       success: false,
       message: "Invalid reset link"
@@ -358,7 +361,10 @@ router.get("/verify-reset-token", async (req, res) => {
 
     // Check OTP validity without consuming it
     const isValid = checkOTPValidity(email, otp, 'reset');
+    console.log("🔍 OTP validity check result:", { email, otp, isValid });
+    
     if (!isValid) {
+      console.log("❌ OTP validation failed for reset token verification");
       return res.status(400).json({
         success: false,
         message: "Invalid or expired reset link"

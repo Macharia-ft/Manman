@@ -56,9 +56,6 @@ function checkOTPValidity(email, inputOtp, type = 'register') {
 
   // Check match
   return entry.otp === inputOtp;
-
-  // Check match
-  return entry.otp === inputOtp;
 }
 
 function canSendOTP(email, type = 'register') {
