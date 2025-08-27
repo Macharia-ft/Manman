@@ -253,7 +253,7 @@ router.post("/forgot-password", async (req, res) => {
 });
 
 // ---------- VERIFY RESET OTP ----------
-router.post("/verify-reset-otp", (req, res) => {
+router.post("/verify-reset-otp", async (req, res) => {
   try {
     const { email, otp } = req.body;
     
@@ -276,7 +276,7 @@ router.post("/verify-reset-otp", (req, res) => {
   }
 });
 
-// Reset password with OTP
+// ---------- RESET PASSWORD ----------
 router.post("/reset-password", async (req, res) => {
   const { email, otp, newPassword } = req.body;
 
