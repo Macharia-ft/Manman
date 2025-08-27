@@ -81,7 +81,7 @@ form.addEventListener("submit", async (e) => {
   spinner.style.display = "block";
 
   try {
-    const response = await fetch(`${config.API_BASE_URL}/api/auth/reset-password`, {
+    const response = await fetch(`${config.API_BASE_URL}/api/reset-password`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
