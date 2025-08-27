@@ -2,10 +2,16 @@ const form = document.getElementById("resetPasswordForm");
 const spinner = document.getElementById("spinner");
 let email, otp;
 
-function togglePassword(fieldId) {
-  const field = document.getElementById(fieldId);
-  const type = field.type === 'password' ? 'text' : 'password';
-  field.type = type;
+function togglePassword(inputId) {
+  const input = document.getElementById(inputId);
+  const icon = input.nextElementSibling;
+  if (input.type === "password") {
+    input.type = "text";
+    icon.textContent = "🙈";
+  } else {
+    input.type = "password";
+    icon.textContent = "👁️";
+  }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
