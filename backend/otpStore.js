@@ -15,6 +15,8 @@ function storeOTP(email, otp, type = 'register') {
   const key = `${email}_${type}`;
   const existing = otpMap.get(key);
 
+  console.log(`💾 Storing OTP - Key: ${key}, OTP: "${otp}" (type: ${typeof otp})`);
+
   otpMap.set(key, {
     otp,
     createdAt: now,
@@ -23,39 +25,70 @@ function storeOTP(email, otp, type = 'register') {
     lockedUntil: existing ? existing.lockedUntil : null,
     type
   });
+  
+  console.log(`✅ OTP stored successfully for ${email}`);
 }
 
 function verifyOTP(email, inputOtp, type = 'register') {
   const key = `${email}_${type}`;
   const entry = otpMap.get(key);
-  if (!entry) return false;
+  
+  console.log(`🔍 VerifyOTP - Key: ${key}, Entry:`, entry);
+  console.log(`🔍 Input OTP: "${inputOtp}" (type: ${typeof inputOtp})`);
+  
+  if (!entry) {
+    console.log(`❌ No OTP entry found for key: ${key}`);
+    return false;
+  }
 
   const now = Date.now();
+  const ageMs = now - entry.createdAt;
 
   // Check expired
-  if (now - entry.createdAt > OTP_EXPIRY_MS) {
+  if (ageMs > OTP_EXPIRY_MS) {
+    console.log(`❌ OTP expired for ${email}, deleting entry`);
     otpMap.delete(key);
     return false;
   }
 
   // Check match
-  return entry.otp === inputOtp;
+  const stored = entry.otp;
+  const match = stored === inputOtp;
+  console.log(`🔍 Stored OTP: "${stored}" (type: ${typeof stored})`);
+  console.log(`🔍 OTP Match: ${match}`);
+  
+  return match;
 }
 
 function checkOTPValidity(email, inputOtp, type = 'register') {
   const key = `${email}_${type}`;
   const entry = otpMap.get(key);
-  if (!entry) return false;
+  
+  console.log(`🔍 CheckOTPValidity - Key: ${key}, Entry:`, entry);
+  console.log(`🔍 Input OTP: "${inputOtp}" (type: ${typeof inputOtp})`);
+  
+  if (!entry) {
+    console.log(`❌ No OTP entry found for key: ${key}`);
+    return false;
+  }
 
   const now = Date.now();
+  const ageMs = now - entry.createdAt;
+  console.log(`🔍 OTP age: ${ageMs}ms, Expiry limit: ${OTP_EXPIRY_MS}ms`);
 
   // Check expired
-  if (now - entry.createdAt > OTP_EXPIRY_MS) {
+  if (ageMs > OTP_EXPIRY_MS) {
+    console.log(`❌ OTP expired for ${email}`);
     return false;
   }
 
   // Check match
-  return entry.otp === inputOtp;
+  const stored = entry.otp;
+  const match = stored === inputOtp;
+  console.log(`🔍 Stored OTP: "${stored}" (type: ${typeof stored})`);
+  console.log(`🔍 OTP Match: ${match}`);
+  
+  return match;
 }
 
 function canSendOTP(email, type = 'register') {

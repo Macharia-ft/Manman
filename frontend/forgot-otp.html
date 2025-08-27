@@ -55,6 +55,10 @@
 
   <script src="config.js"></script>
   <script>
+    // Force cache refresh
+    console.log('🔄 Page loaded at:', new Date().toISOString());
+  </script>
+  <script>
     // --- Submit OTP verification ---
     document.getElementById("otpForm").addEventListener("submit", async (e) => {
       e.preventDefault();
