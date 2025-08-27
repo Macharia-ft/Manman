@@ -32,7 +32,7 @@ const supabaseAnonKey = process.env.ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // ✅ API routes
-app.use("/api", authRoutes);
+app.use("/api/auth", authRoutes);
 app.use("/api", uploadIdentityRoute);
 app.use("/api", personalRoute);
 app.use("/api", preferencesRoute);
