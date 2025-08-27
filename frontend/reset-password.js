@@ -27,12 +27,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Verify the reset token
   try {
-    const response = await fetch(`${config.API_BASE_URL}/api/verify-reset-otp`, {
-      method: 'POST',
+    const response = await fetch(`${config.API_BASE_URL}/api/verify-reset-token?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`, {
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ email, otp })
+      }
     });
 
     // Check if response is HTML (error page) instead of JSON
