@@ -113,7 +113,7 @@ function updateProgressBar() {
   let progress = 0;
   let lastInstruction = "";
   const step = 50; // Changed from 20 to 50 (100/2 = 50 for 2 steps)
-  const durationPerStep = 6000; // Keep same duration per instruction
+  const durationPerStep = 8000; // Increased from 6000 to 8000 (8 seconds per instruction)
   instructionsFollowed = []; // Reset instructions
 
   currentInterval = setInterval(() => {

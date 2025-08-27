@@ -3,8 +3,8 @@
 const otpMap = new Map(); // Stores OTP and metadata in memory
 
 const OTP_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
-const OTP_LIMIT = 5; // Max resend attempts
-const OTP_LOCK_MS = 12 * 60 * 60 * 1000; // 12 hours
+const OTP_LIMIT = 3; // Max resend attempts (reduced to 3)
+const OTP_LOCK_MS = 24 * 60 * 60 * 1000; // 24 hours (increased from 12)
 
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit string
@@ -41,20 +41,29 @@ function verifyOTP(email, inputOtp) {
 function canSendOTP(email) {
   const entry = otpMap.get(email);
 
-  if (!entry) return true;
+  if (!entry) return { canSend: true, message: null };
 
   const now = Date.now();
 
+  // Check if user is locked due to too many attempts
   if (entry.lockedUntil && now < entry.lockedUntil) {
-    return false;
+    const hoursLeft = Math.ceil((entry.lockedUntil - now) / (1000 * 60 * 60));
+    return { 
+      canSend: false, 
+      message: `You have reached the maximum number of OTP resend attempts. Try again after ${hoursLeft} hours and check your email trash.` 
+    };
   }
 
+  // Check if user has reached the limit
   if (entry.attempts >= OTP_LIMIT) {
     entry.lockedUntil = now + OTP_LOCK_MS;
-    return false;
+    return { 
+      canSend: false, 
+      message: "You have reached the maximum number of OTP resend attempts. Try again after 24 hours and check your email trash." 
+    };
   }
 
-  return true;
+  return { canSend: true, message: null };
 }
 
 function incrementOTPAttempt(email) {

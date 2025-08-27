@@ -41,8 +41,9 @@ router.post("/send-otp", async (req, res) => {
       return res.status(400).json({ error: "Account with this email already exists." });
     }
 
-    if (!canSendOTP(email)) {
-      return res.status(429).json({ error: "You have reached the maximum number of OTPs. Please check your spam folder or try again after 12 hours." });
+    const otpCheck = canSendOTP(email);
+    if (!otpCheck.canSend) {
+      return res.status(429).json({ error: otpCheck.message });
     }
 
     const otp = generateOTP();
@@ -203,8 +204,9 @@ router.post("/forgot-password", async (req, res) => {
       return res.status(404).json({ error: "User does not exist. Please sign up." });
     }
 
-    if (!canSendOTP(email)) {
-      return res.status(429).json({ error: "You have reached your maximum try. Try again later." });
+    const otpCheck = canSendOTP(email);
+    if (!otpCheck.canSend) {
+      return res.status(429).json({ error: otpCheck.message });
     }
 
     const otp = generateOTP();
@@ -295,6 +297,10 @@ router.post("/reset-password", async (req, res) => {
         message: "Failed to update password"
       });
     }
+
+    // Clean up OTP after successful password reset
+    const { resetOTP } = require("../otpStore");
+    resetOTP(email);
 
     console.log("✅ Password reset successfully for:", email);
     res.json({
