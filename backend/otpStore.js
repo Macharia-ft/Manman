@@ -64,7 +64,7 @@ function canSendOTP(email, type = 'register') {
     const hoursLeft = Math.ceil((entry.lockedUntil - now) / (1000 * 60 * 60));
     return { 
       canSend: false, 
-      message: `You have reached the maximum number of OTP resend attempts. Try again after ${hoursLeft} hours and check your email trash.` 
+      message: `You have reached the maximum number of OTP resend attempts. Try again after ${hoursLeft} hours and check the spam folder.` 
     };
   }
 
@@ -73,7 +73,7 @@ function canSendOTP(email, type = 'register') {
     entry.lockedUntil = now + OTP_LOCK_MS;
     return { 
       canSend: false, 
-      message: "You have reached the maximum number of OTP resend attempts. Try again after 24 hours and check your email trash." 
+      message: "You have reached the maximum number of OTP resend attempts. Try again after 24 hours and check the spam folder." 
     };
   }
 

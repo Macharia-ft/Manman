@@ -100,6 +100,9 @@ router.post("/verify-otp", async (req, res) => {
     return res.status(400).json({ error: "Wrong OTP." });
   }
 
+  // Reset OTP attempts on successful verification
+  resetOTP(email, 'register');
+
   try {
     const { data: existing, error: checkError } = await supabase
       .from('users')
@@ -126,8 +129,6 @@ router.post("/verify-otp", async (req, res) => {
       return res.status(500).json({ error: "Failed to save user." });
     }
 
-    // Clear OTP after successful registration
-    resetOTP(email, 'register');
     res.status(200).json({ message: "User registered successfully." });
   } catch (err) {
     console.error("Save user error:", err.message);
@@ -264,6 +265,9 @@ router.post("/verify-reset-otp", (req, res) => {
     if (!isValid) {
       return res.status(400).json({ error: "Wrong OTP." });
     }
+
+    // Reset OTP attempts on successful verification
+    resetOTP(email, 'reset');
 
     return res.status(200).json({ message: "OTP verified." });
   } catch (error) {
