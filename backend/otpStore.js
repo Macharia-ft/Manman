@@ -3,34 +3,37 @@
 const otpMap = new Map(); // Stores OTP and metadata in memory
 
 const OTP_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
-const OTP_LIMIT = 3; // Max resend attempts (reduced to 3)
-const OTP_LOCK_MS = 24 * 60 * 60 * 1000; // 24 hours (increased from 12)
+const OTP_LIMIT = 3; // Max resend attempts
+const OTP_LOCK_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit string
 }
 
-function storeOTP(email, otp) {
+function storeOTP(email, otp, type = 'register') {
   const now = Date.now();
+  const key = `${email}_${type}`;
 
-  otpMap.set(email, {
+  otpMap.set(key, {
     otp,
     createdAt: now,
     attempts: 0,
     lastSent: now,
     lockedUntil: null,
+    type
   });
 }
 
-function verifyOTP(email, inputOtp) {
-  const entry = otpMap.get(email);
+function verifyOTP(email, inputOtp, type = 'register') {
+  const key = `${email}_${type}`;
+  const entry = otpMap.get(key);
   if (!entry) return false;
 
   const now = Date.now();
 
   // Check expired
   if (now - entry.createdAt > OTP_EXPIRY_MS) {
-    otpMap.delete(email);
+    otpMap.delete(key);
     return false;
   }
 
@@ -38,8 +41,9 @@ function verifyOTP(email, inputOtp) {
   return entry.otp === inputOtp;
 }
 
-function canSendOTP(email) {
-  const entry = otpMap.get(email);
+function canSendOTP(email, type = 'register') {
+  const key = `${email}_${type}`;
+  const entry = otpMap.get(key);
 
   if (!entry) return { canSend: true, message: null };
 
@@ -66,15 +70,17 @@ function canSendOTP(email) {
   return { canSend: true, message: null };
 }
 
-function incrementOTPAttempt(email) {
-  const entry = otpMap.get(email);
+function incrementOTPAttempt(email, type = 'register') {
+  const key = `${email}_${type}`;
+  const entry = otpMap.get(key);
   if (entry) {
     entry.attempts = (entry.attempts || 0) + 1;
   }
 }
 
-function resetOTP(email) {
-  otpMap.delete(email);
+function resetOTP(email, type = 'register') {
+  const key = `${email}_${type}`;
+  otpMap.delete(key);
 }
 
 module.exports = {

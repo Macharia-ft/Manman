@@ -41,13 +41,13 @@ router.post("/send-otp", async (req, res) => {
       return res.status(400).json({ error: "Account with this email already exists." });
     }
 
-    const otpCheck = canSendOTP(email);
+    const otpCheck = canSendOTP(email, 'register');
     if (!otpCheck.canSend) {
       return res.status(429).json({ error: otpCheck.message });
     }
 
     const otp = generateOTP();
-    storeOTP(email, otp);
+    storeOTP(email, otp, 'register');
 
     console.log(`📧 Attempting to send OTP to: ${email}`);
     console.log(`📧 Using sender email: ${process.env.EMAIL_USER || process.env.GMAIL_USER}`);
@@ -72,7 +72,7 @@ router.post("/send-otp", async (req, res) => {
     await transporter.sendMail(mailOptions);
 
     console.log(`✅ OTP sent successfully to: ${email}`);
-    incrementOTPAttempt(email);
+    incrementOTPAttempt(email, 'register');
     res.status(200).json({ message: "OTP sent successfully." });
   } catch (err) {
     console.error("📧 Send OTP error:", err);
@@ -91,7 +91,7 @@ router.post("/verify-otp", async (req, res) => {
     return res.status(400).json({ error: "Missing email, OTP or password." });
   }
 
-  const valid = verifyOTP(email, otp);
+  const valid = verifyOTP(email, otp, 'register');
   if (!valid) {
     return res.status(400).json({ error: "Wrong OTP." });
   }
@@ -122,6 +122,8 @@ router.post("/verify-otp", async (req, res) => {
       return res.status(500).json({ error: "Failed to save user." });
     }
 
+    // Clear OTP after successful registration
+    resetOTP(email, 'register');
     res.status(200).json({ message: "User registered successfully." });
   } catch (err) {
     console.error("Save user error:", err.message);
@@ -204,13 +206,13 @@ router.post("/forgot-password", async (req, res) => {
       return res.status(404).json({ error: "User does not exist. Please sign up." });
     }
 
-    const otpCheck = canSendOTP(email);
+    const otpCheck = canSendOTP(email, 'reset');
     if (!otpCheck.canSend) {
       return res.status(429).json({ error: otpCheck.message });
     }
 
     const otp = generateOTP();
-    storeOTP(email, otp);
+    storeOTP(email, otp, 'reset');
 
     console.log(`📧 Sending reset OTP to: ${email}`);
 
@@ -234,7 +236,7 @@ router.post("/forgot-password", async (req, res) => {
     await transporter.sendMail(mailOptions);
 
     console.log(`✅ Reset OTP sent successfully to: ${email}`);
-    incrementOTPAttempt(email);
+    incrementOTPAttempt(email, 'reset');
     res.status(200).json({ message: "OTP sent." });
   } catch (err) {
     console.error("📧 Forgot password error:", err);
@@ -251,7 +253,7 @@ router.post("/verify-reset-otp", (req, res) => {
       return res.status(400).json({ error: "Missing email or OTP." });
     }
 
-    const isValid = verifyOTP(email, otp);
+    const isValid = verifyOTP(email, otp, 'reset');
     if (!isValid) {
       return res.status(400).json({ error: "Wrong OTP." });
     }
@@ -276,7 +278,7 @@ router.post("/reset-password", async (req, res) => {
 
   try {
     // Verify OTP first
-    const isValid = verifyOTP(email, otp);
+    const isValid = verifyOTP(email, otp, 'reset');
     if (!isValid) {
       return res.status(400).json({
         success: false,
@@ -299,8 +301,7 @@ router.post("/reset-password", async (req, res) => {
     }
 
     // Clean up OTP after successful password reset
-    const { resetOTP } = require("../otpStore");
-    resetOTP(email);
+    resetOTP(email, 'reset');
 
     console.log("✅ Password reset successfully for:", email);
     res.json({
@@ -344,7 +345,7 @@ router.get("/verify-reset-token", async (req, res) => {
     }
 
     // Verify OTP
-    const isValid = verifyOTP(email, otp);
+    const isValid = verifyOTP(email, otp, 'reset');
     if (!isValid) {
       return res.status(400).json({
         success: false,
