@@ -19,7 +19,7 @@ document.getElementById("otpForm").addEventListener("submit", async (e) => {
   }
 
   try {
-    const res = await fetch(`${config.API_BASE_URL}/api/verify-reset-otp`, {
+    const res = await fetch(`${config.API_BASE_URL}/api/auth/verify-reset-otp`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
