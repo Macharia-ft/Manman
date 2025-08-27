@@ -13,13 +13,14 @@ function generateOTP() {
 function storeOTP(email, otp, type = 'register') {
   const now = Date.now();
   const key = `${email}_${type}`;
+  const existing = otpMap.get(key);
 
   otpMap.set(key, {
     otp,
     createdAt: now,
-    attempts: 0,
+    attempts: existing ? existing.attempts : 0,
     lastSent: now,
-    lockedUntil: null,
+    lockedUntil: existing ? existing.lockedUntil : null,
     type
   });
 }
@@ -43,9 +44,18 @@ function verifyOTP(email, inputOtp, type = 'register') {
 
 function canSendOTP(email, type = 'register') {
   const key = `${email}_${type}`;
-  const entry = otpMap.get(key);
+  let entry = otpMap.get(key);
 
-  if (!entry) return { canSend: true, message: null };
+  // If no entry exists, create one with 0 attempts
+  if (!entry) {
+    entry = {
+      attempts: 0,
+      lockedUntil: null,
+      type
+    };
+    otpMap.set(key, entry);
+    return { canSend: true, message: null };
+  }
 
   const now = Date.now();
 

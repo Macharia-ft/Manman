@@ -9,7 +9,8 @@ const {
   storeOTP,
   verifyOTP,
   canSendOTP,
-  incrementOTPAttempt
+  incrementOTPAttempt,
+  resetOTP
 } = require("../otpStore");
 
 // Initialize Supabase client
@@ -41,10 +42,14 @@ router.post("/send-otp", async (req, res) => {
       return res.status(400).json({ error: "Account with this email already exists." });
     }
 
+    // Check OTP limit before sending
     const otpCheck = canSendOTP(email, 'register');
     if (!otpCheck.canSend) {
       return res.status(429).json({ error: otpCheck.message });
     }
+
+    // Increment attempt BEFORE sending to properly track attempts
+    incrementOTPAttempt(email, 'register');
 
     const otp = generateOTP();
     storeOTP(email, otp, 'register');
@@ -72,7 +77,6 @@ router.post("/send-otp", async (req, res) => {
     await transporter.sendMail(mailOptions);
 
     console.log(`✅ OTP sent successfully to: ${email}`);
-    incrementOTPAttempt(email, 'register');
     res.status(200).json({ message: "OTP sent successfully." });
   } catch (err) {
     console.error("📧 Send OTP error:", err);
@@ -206,10 +210,14 @@ router.post("/forgot-password", async (req, res) => {
       return res.status(404).json({ error: "User does not exist. Please sign up." });
     }
 
+    // Check OTP limit before sending
     const otpCheck = canSendOTP(email, 'reset');
     if (!otpCheck.canSend) {
       return res.status(429).json({ error: otpCheck.message });
     }
+
+    // Increment attempt BEFORE sending to properly track attempts
+    incrementOTPAttempt(email, 'reset');
 
     const otp = generateOTP();
     storeOTP(email, otp, 'reset');
@@ -236,7 +244,6 @@ router.post("/forgot-password", async (req, res) => {
     await transporter.sendMail(mailOptions);
 
     console.log(`✅ Reset OTP sent successfully to: ${email}`);
-    incrementOTPAttempt(email, 'reset');
     res.status(200).json({ message: "OTP sent." });
   } catch (err) {
     console.error("📧 Forgot password error:", err);
