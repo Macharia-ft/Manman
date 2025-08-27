@@ -262,13 +262,14 @@ router.post("/verify-reset-otp", async (req, res) => {
       return res.status(400).json({ error: "Missing email or OTP." });
     }
 
-    const isValid = verifyOTP(email, otp, 'reset');
+    // Use checkOTPValidity instead of verifyOTP to avoid deleting the OTP
+    const isValid = checkOTPValidity(email, otp, 'reset');
     if (!isValid) {
       return res.status(400).json({ error: "Wrong OTP." });
     }
 
-    // Reset OTP attempts on successful verification
-    resetOTP(email, 'reset');
+    // Don't reset OTP here - keep it for the actual password reset
+    // resetOTP(email, 'reset'); // Commented out
 
     return res.status(200).json({ message: "OTP verified." });
   } catch (error) {

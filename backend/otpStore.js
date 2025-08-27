@@ -46,8 +46,7 @@ function verifyOTP(email, inputOtp, type = 'register') {
 
   // Check expired
   if (ageMs > OTP_EXPIRY_MS) {
-    console.log(`❌ OTP expired for ${email}, deleting entry`);
-    otpMap.delete(key);
+    console.log(`❌ OTP expired for ${email}`);
     return false;
   }
 
