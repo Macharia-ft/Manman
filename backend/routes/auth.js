@@ -8,6 +8,7 @@ const {
   generateOTP,
   storeOTP,
   verifyOTP,
+  checkOTPValidity,
   canSendOTP,
   incrementOTPAttempt,
   resetOTP
@@ -355,8 +356,8 @@ router.get("/verify-reset-token", async (req, res) => {
       });
     }
 
-    // Verify OTP
-    const isValid = verifyOTP(email, otp, 'reset');
+    // Check OTP validity without consuming it
+    const isValid = checkOTPValidity(email, otp, 'reset');
     if (!isValid) {
       return res.status(400).json({
         success: false,

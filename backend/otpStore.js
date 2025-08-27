@@ -42,6 +42,22 @@ function verifyOTP(email, inputOtp, type = 'register') {
   return entry.otp === inputOtp;
 }
 
+function checkOTPValidity(email, inputOtp, type = 'register') {
+  const key = `${email}_${type}`;
+  const entry = otpMap.get(key);
+  if (!entry) return false;
+
+  const now = Date.now();
+
+  // Check expired
+  if (now - entry.createdAt > OTP_EXPIRY_MS) {
+    return false;
+  }
+
+  // Check match
+  return entry.otp === inputOtp;
+}
+
 function canSendOTP(email, type = 'register') {
   const key = `${email}_${type}`;
   let entry = otpMap.get(key);
@@ -97,6 +113,7 @@ module.exports = {
   generateOTP,
   storeOTP,
   verifyOTP,
+  checkOTPValidity,
   canSendOTP,
   incrementOTPAttempt,
   resetOTP
