@@ -41,15 +41,20 @@ body {
 }
 
 .admin-action-btn {
-  padding: 6px 12px;
-  font-size: 14px;
-  background: #2ecc71;
+  background-color: #007bff;
   color: white;
   border: none;
-  border-radius: 4px;
+  padding: 8px 15px;
+  border-radius: 5px;
   cursor: pointer;
+  font-size: 14px;
+  margin-right: 5px;
 }
 
 .admin-action-btn:hover {
   background: #27ae60;
+}
+
+.premium-btn {
+  background-color: #ff6b35;
 }

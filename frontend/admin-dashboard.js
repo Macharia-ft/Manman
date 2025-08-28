@@ -29,6 +29,9 @@ if (!token) {
             <button class="admin-action-btn" onclick="viewUser('${user.id}')">
               View
             </button>
+            <button class="admin-action-btn premium-btn" onclick="managePremium('${user.email}', '${user.full_name || 'User'}')">
+              Premium
+            </button>
           </td>
         `;
 
@@ -44,4 +47,8 @@ if (!token) {
 
 function viewUser(userId) {
   window.location.href = `admin-user-view.html?id=${userId}`;
+}
+
+function managePremium(email, name) {
+  window.location.href = `admin-premium-manager.html?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`;
 }
