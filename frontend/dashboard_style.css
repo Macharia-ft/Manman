@@ -354,6 +354,17 @@ body {
 .adjust-preferences-btn:hover {
   background: #0056b3;
 }
+
+.disabled-btn {
+  background: #6c757d !important;
+  color: white !important;
+  cursor: not-allowed !important;
+  opacity: 0.6;
+}
+
+.disabled-btn:hover {
+  background: #6c757d !important;
+}
 /* Image inside the floating photo */
 .floating-profile-photo img {
   width: 250px;  /* Updated size */

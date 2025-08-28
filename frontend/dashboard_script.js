@@ -199,6 +199,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const selectButton = actions.querySelector(".select-btn");
         if (selectButton) {
           selectButton.addEventListener("click", async () => {
+            user.originalLocation = 'all';
             selectedProfiles.push(user);
             allProfiles = allProfiles.filter(u => u.id !== user.id);
             updateLocalStorage();
@@ -240,6 +241,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const removeButton = actions.querySelector(".remove-btn");
         if (removeButton) {
           removeButton.addEventListener("click", () => {
+            user.originalLocation = 'all';
             removedProfiles.push(user);
             allProfiles = allProfiles.filter(u => u.id !== user.id);
             updateLocalStorage();
@@ -257,7 +259,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const cancelButton = actions.querySelector(".select-btn");
         if (cancelButton) {
           cancelButton.addEventListener("click", () => {
-            allProfiles.push(user);
+            // Return to original location (usually 'all')
+            const originalLocation = user.originalLocation || 'all';
+            if (originalLocation === 'all') {
+              allProfiles.push(user);
+            }
             selectedProfiles = selectedProfiles.filter(u => u.id !== user.id);
             updateLocalStorage();
             renderProfiles();
@@ -268,6 +274,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const removeButton = actions.querySelector(".remove-btn");
         if (removeButton) {
           removeButton.addEventListener("click", () => {
+            user.originalLocation = user.originalLocation || 'selected';
             removedProfiles.push(user);
             selectedProfiles = selectedProfiles.filter(u => u.id !== user.id);
             updateLocalStorage();
@@ -289,6 +296,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (subscription === 'free') {
               showPremiumNotification();
             } else {
+              user.originalLocation = 'selected-you';
               acceptedProfiles.push(user);
               selectedYouProfiles = selectedYouProfiles.filter(u => u.id !== user.id);
               updateLocalStorage();
@@ -300,6 +308,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const rejectButton = actions.querySelector(".remove-btn");
         if (rejectButton) {
           rejectButton.addEventListener("click", () => {
+            user.originalLocation = 'selected-you';
             removedProfiles.push(user);
             selectedYouProfiles = selectedYouProfiles.filter(u => u.id !== user.id);
             updateLocalStorage();
@@ -341,6 +350,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const cancelMatchButton = actions.querySelector(".remove-btn");
         if (cancelMatchButton) {
           cancelMatchButton.addEventListener("click", () => {
+            // Store original location for proper restoration
+            user.originalLocation = user.originalLocation || 'all';
             removedProfiles.push(user);
             acceptedProfiles = acceptedProfiles.filter(u => u.id !== user.id);
             updateLocalStorage();
@@ -379,7 +390,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         const restoreButton = actions.querySelector(".restore-btn");
         if (restoreButton) {
           restoreButton.addEventListener("click", () => {
-            allProfiles.push(user);
+            // Restore to original location
+            const originalLocation = user.originalLocation || 'all';
+            
+            if (originalLocation === 'selected') {
+              selectedProfiles.push(user);
+            } else if (originalLocation === 'selected-you') {
+              selectedYouProfiles.push(user);
+            } else if (originalLocation === 'accepted') {
+              acceptedProfiles.push(user);
+            } else {
+              allProfiles.push(user);
+            }
+            
             removedProfiles = removedProfiles.filter(u => u.id !== user.id);
             updateLocalStorage();
             renderProfiles();
