@@ -4,13 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Premium Approvals</title>
-    <link rel="stylesheet" href="admin-premium-approvals.css">
+    <title>Premium Approvals - Admin</title>
+    <link rel="stylesheet" href="admin-dashboard.css">
 </head>
 <body>
     <div class="admin-container">
         <header>
-            <h1>Premium Subscription Approvals</h1>
+            <h1>Premium Approvals</h1>
             <nav>
                 <a href="admin-dashboard.html">Dashboard</a>
                 <a href="admin-media-updates.html">Media Updates</a>
@@ -22,15 +22,15 @@
             <div class="stats">
                 <div class="stat-card">
                     <h3>Pending Approvals</h3>
-                    <span id="pendingCount">0</span>
+                    <span id="pendingApprovals">0</span>
                 </div>
                 <div class="stat-card">
                     <h3>Approved Today</h3>
-                    <span id="approvedCount">0</span>
+                    <span id="approvedToday">0</span>
                 </div>
                 <div class="stat-card">
                     <h3>Total Revenue</h3>
-                    <span id="revenueCount">$0</span>
+                    <span id="totalRevenue">$0</span>
                 </div>
             </div>
 
@@ -40,12 +40,74 @@
                 <button class="filter-btn" data-status="rejected">Rejected</button>
             </div>
 
-            <div id="subscriptionsContainer" class="subscriptions-container">
-                <!-- Premium subscriptions will be loaded here -->
+            <div id="approvalsContainer" class="approvals-container">
+                <!-- Approvals will be loaded here -->
             </div>
         </div>
     </div>
 
-    <script src="admin-premium-approvals.js"></script>
+    <script src="config.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('admin_token');
+            if (!token) {
+                window.location.href = 'admin-login.html';
+                return;
+            }
+
+            let currentStatus = 'pending';
+            
+            // Load initial data
+            await loadApprovals();
+            await loadStats();
+
+            // Filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentStatus = btn.dataset.status;
+                    await loadApprovals();
+                });
+            });
+
+            async function loadApprovals() {
+                try {
+                    const response = await fetch(`${config.API_BASE_URL}/api/admin/premium-approvals?status=${currentStatus}`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+
+                    if (!response.ok) throw new Error('Failed to load approvals');
+
+                    const approvals = await response.json();
+                    renderApprovals(approvals);
+                } catch (error) {
+                    console.error('Error loading approvals:', error);
+                    document.getElementById('approvalsContainer').innerHTML = '<p>Error loading premium approvals</p>';
+                }
+            }
+
+            async function loadStats() {
+                try {
+                    document.getElementById('pendingApprovals').textContent = '0';
+                    document.getElementById('approvedToday').textContent = '0';
+                    document.getElementById('totalRevenue').textContent = '$0';
+                } catch (error) {
+                    console.error('Error loading stats:', error);
+                }
+            }
+
+            function renderApprovals(approvals) {
+                const container = document.getElementById('approvalsContainer');
+                
+                if (!approvals || approvals.length === 0) {
+                    container.innerHTML = '<p>No premium approval requests found</p>';
+                    return;
+                }
+
+                container.innerHTML = '<p>Premium approval system will be implemented when payment integration is added.</p>';
+            }
+        });
+    </script>
 </body>
 </html>

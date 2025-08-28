@@ -43,6 +43,64 @@ app.use("/api", statusRoute);
 app.use('/api/admin', adminRoutes);
 app.use("/api/user", userRoutes);
 
+// Admin media updates routes
+app.get("/api/admin/media-updates", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ success: false, message: "Missing token" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.role !== 'admin') {
+      return res.status(403).json({ success: false, message: "Admin access required" });
+    }
+
+    res.json([]);
+  } catch (error) {
+    console.error("Media updates error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+app.get("/api/admin/media-updates/stats", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ success: false, message: "Missing token" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.role !== 'admin') {
+      return res.status(403).json({ success: false, message: "Admin access required" });
+    }
+
+    res.json({ pending: 0, approved: 0, rejected: 0 });
+  } catch (error) {
+    console.error("Media stats error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+app.get("/api/admin/premium-approvals", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ success: false, message: "Missing token" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.role !== 'admin') {
+      return res.status(403).json({ success: false, message: "Admin access required" });
+    }
+
+    res.json([]);
+  } catch (error) {
+    console.error("Premium approvals error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
 // ✅ Fetch the user ID based on email
 async function getUserIdByEmail(currentUserEmail) {
   const { data, error } = await supabase

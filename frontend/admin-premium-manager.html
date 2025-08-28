@@ -45,6 +45,30 @@
   </div>
 
   <script src="config.js"></script>
+  <div class="premium-manager-container">
+    <h1>Premium Manager</h1>
+    
+    <div class="user-info">
+      <h2 id="userName">Loading...</h2>
+      <p id="userEmail">Loading...</p>
+    </div>
+    
+    <div class="premium-actions">
+      <div class="grant-section">
+        <h3>Grant Premium Access</h3>
+        <label for="premiumDays">Days:</label>
+        <input type="number" id="premiumDays" value="30" min="1" max="365">
+        <button onclick="grantPremiumAccess()" class="grant-btn">Grant Premium</button>
+      </div>
+      
+      <div class="remove-section">
+        <h3>Remove Premium Access</h3>
+        <button onclick="removePremiumAccess()" class="remove-btn">Remove Premium</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
   <script src="admin-premium-manager.js"></script>
 </body>
 </html>

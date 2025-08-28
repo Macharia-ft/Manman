@@ -15,6 +15,67 @@ const userName = urlParams.get('name');
 document.getElementById('userName').textContent = userName || 'Unknown User';
 document.getElementById('userEmail').textContent = userEmail || 'No email';
 
+// Grant premium access
+async function grantPremiumAccess() {
+  const days = document.getElementById('premiumDays').value || 30;
+  
+  try {
+    const response = await fetch(`${config.API_BASE_URL}/api/admin/grant-premium`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        email: userEmail,
+        days: parseInt(days)
+      })
+    });
+
+    const data = await response.json();
+    
+    if (response.ok) {
+      alert(`Premium access granted for ${days} days!`);
+    } else {
+      alert(`Error: ${data.message}`);
+    }
+  } catch (error) {
+    console.error('Error granting premium:', error);
+    alert('Error granting premium access');
+  }
+}
+
+// Remove premium access
+async function removePremiumAccess() {
+  if (!confirm('Are you sure you want to remove premium access?')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${config.API_BASE_URL}/api/admin/remove-premium`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        email: userEmail
+      })
+    });
+
+    const data = await response.json();
+    
+    if (response.ok) {
+      alert('Premium access removed!');
+    } else {
+      alert(`Error: ${data.message}`);
+    }
+  } catch (error) {
+    console.error('Error removing premium:', error);
+    alert('Error removing premium access');
+  }
+}
+
 function showStatus(message, isSuccess = true) {
   const statusElement = document.getElementById('statusMessage');
   statusElement.textContent = message;

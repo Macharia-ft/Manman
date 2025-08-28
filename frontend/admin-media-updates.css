@@ -97,6 +97,73 @@ nav a:hover, nav a.active {
 
 .update-card {
     background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: grid;
+    grid-template-columns: 1fr 200px 150px;
+    gap: 20px;
+    align-items: start;
+}
+
+.user-info h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.user-info p {
+    margin: 5px 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.media-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.media-content img,
+.media-content video {
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.approve-btn, .reject-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.approve-btn {
+    background: #28a745;
+    color: white;
+}
+
+.approve-btn:hover {
+    background: #218838;
+}
+
+.reject-btn {
+    background: #dc3545;
+    color: white;
+}
+
+.reject-btn:hover {
+    background: #c82333;
+}
+
+.update-card {
+    background: white;
     border-radius: 8px;
     padding: 20px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
