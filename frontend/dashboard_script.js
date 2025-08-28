@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   } catch (error) {
     console.error(error);
     if (container) {
-      container.innerHTML = `<p>Error: ${error.message}</p>';
+      container.innerHTML = `<p>Error: ${error.message}</p>`;
       container.style.display = 'block';
     }
     if (loadingSpinner) loadingSpinner.style.display = 'none';
