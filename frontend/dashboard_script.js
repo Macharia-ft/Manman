@@ -1,5 +1,5 @@
 
-// Import JWT decode functionality if needed
+// JWT decode functionality
 function decodeJWT(token) {
   try {
     const parts = token.split(".");
