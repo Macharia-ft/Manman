@@ -57,6 +57,95 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>
     `;
   }
+
+  // Match Statistics Chart
+  function renderMatchChart() {
+    const ctx = document.getElementById('matchChart');
+    if (!ctx) return;
+
+    const chart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Matches', 'Selected', 'Rejected'],
+        datasets: [{
+          data: [12, 8, 15],
+          backgroundColor: ['#ff6b6b', '#4ecdc4', '#45b7d1'],
+          borderWidth: 2,
+          borderColor: '#fff'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: '#333',
+              font: {
+                size: 12
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Activity Chart
+  function renderActivityChart() {
+    const ctx = document.getElementById('activityChart');
+    if (!ctx) return;
+
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        datasets: [{
+          label: 'Daily Activity',
+          data: [5, 8, 12, 15, 10, 20, 18],
+          borderColor: '#ff6b6b',
+          backgroundColor: 'rgba(255, 107, 107, 0.1)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: 'rgba(0,0,0,0.1)'
+            },
+            ticks: {
+              color: '#666'
+            }
+          },
+          x: {
+            grid: {
+              color: 'rgba(0,0,0,0.1)'
+            },
+            ticks: {
+              color: '#666'
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
+          }
+        }
+      }
+    });
+  }
+
+  renderMatchChart();
+  renderActivityChart();
+
+  loadConversations(); // Call the original function to load conversations
 });
 
 async function checkUserSubscription() {
@@ -112,8 +201,8 @@ function displayConversations(conversations) {
     chatItem.onclick = () => openChat(conv.user_id, conv.user_name);
 
     chatItem.innerHTML = `
-      <img src="${conv.profile_photo_url || 'https://via.placeholder.com/60'}" 
-           alt="${conv.user_name}" 
+      <img src="${conv.profile_photo_url || 'https://via.placeholder.com/60'}"
+           alt="${conv.user_name}"
            class="chat-avatar"
            onclick="event.stopPropagation(); showProfilePhoto('${conv.profile_photo_url}', '${conv.user_name}')">
       <div class="chat-info">

@@ -483,7 +483,7 @@ app.get('/api/users/interactions/:email', async (req, res) => {
       .from('user_interactions')
       .select(`
         *,
-        target_user:users!user_interactions_target_user_id_fkey(*)
+        target_user:users(*)
       `)
       .eq('current_user_id', currentUserId);
 
