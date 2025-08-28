@@ -221,7 +221,7 @@ function calculateMatchScore(user, currentUser) {
 }
 
 // Helper function to compare two attributes, accounting for null or empty values
-function compareAttribute(userValue, prefValue, prefMin, prefMax) {
+function compareAttribute(userValue, prefValue, prefMax) {
   if (userValue == null || prefValue == null) return 0;  // No match if either value is null
 
   // If it's an array (languages or multiple values), check if there's any match
@@ -230,8 +230,10 @@ function compareAttribute(userValue, prefValue, prefMin, prefMax) {
   }
 
   // For numerical values (age, height, weight), check within a range if the preference is a range
-  if (prefMin != null && prefMax != null && !isNaN(userValue)) {
-    return (userValue >= prefMin && userValue <= prefMax) ? 1 : 0;
+  if (prefMax != null && !isNaN(userValue) && !isNaN(prefValue)) {
+      const prefMinValue = Array.isArray(prefValue) ? prefValue[0] : prefValue;
+      const prefMaxValue = Array.isArray(prefValue) ? prefValue[1] : prefMax;
+      return (userValue >= prefMinValue && userValue <= prefMaxValue) ? 1 : 0;
   }
 
   // Compare for exact matches (strings, numbers)

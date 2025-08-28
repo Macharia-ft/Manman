@@ -14,37 +14,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (response.ok) {
       const data = await response.json();
       if (data.subscription === 'free') {
+        // Redirect free users immediately without showing content
         showPremiumNotification();
         return;
       }
     }
   } catch (error) {
     console.error('Error checking subscription:', error);
-  }
-
-  async function checkUserSubscription() {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${config.API_BASE_URL}/api/user/subscription-status`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        return data.subscription || 'free';
-      }
-    } catch (error) {
-      console.error('Error checking subscription:', error);
-    }
-    return 'free';
+    showPremiumNotification();
+    return;
   }
 
   function showPremiumNotification() {
     document.body.innerHTML = `
-      <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #f5f5f5;">
+      <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
         <div style="background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; max-width: 500px;">
           <h2 style="color: #ff6b35; margin-bottom: 20px;">🚀 Premium Feature</h2>
-          <p style="margin-bottom: 30px; font-size: 18px;">Charts and analytics are available for Premium users only!</p>
+          <p style="margin-bottom: 30px; font-size: 18px;">Charts and messaging are available for Premium users only!</p>
           <div style="display: flex; gap: 15px; justify-content: center;">
             <button onclick="window.location.href='subscriptions.html'" style="background: #007BFF; color: white; padding: 15px 30px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">
               Upgrade to Premium
@@ -58,111 +44,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     `;
   }
 
-  // Check authentication
-  const token = localStorage.getItem("token");
-  if (!token) {
-    window.location.href = "login.html";
-  }
-
-  // Chart configuration
-  const chartConfig = {
-    type: 'doughnut',
-    data: {
-      labels: ['All Profiles', 'Selected', 'Selected You', 'Accepted', 'Removed'],
-      datasets: [{
-        data: [0, 0, 0, 0, 0],
-        backgroundColor: [
-          '#FF6384',
-          '#36A2EB',
-          '#FFCE56',
-          '#4BC0C0',
-          '#9966FF'
-        ],
-        borderWidth: 2,
-        borderColor: '#fff'
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: {
-            padding: 20,
-            usePointStyle: true
-          }
-        },
-        title: {
-          display: true,
-          text: 'Profile Distribution',
-          font: {
-            size: 18,
-            weight: 'bold'
-          }
+  // Load conversations for premium users
+  await loadConversations();
+  
+  // Add search functionality
+  const searchInput = document.querySelector('.search-input');
+  if (searchInput) {
+    searchInput.addEventListener('input', function(e) {
+      const searchTerm = e.target.value.toLowerCase();
+      const chatItems = document.querySelectorAll('.chat-item');
+      
+      chatItems.forEach(item => {
+        const name = item.querySelector('.chat-name').textContent.toLowerCase();
+        const preview = item.querySelector('.chat-preview').textContent.toLowerCase();
+        
+        if (name.includes(searchTerm) || preview.includes(searchTerm)) {
+          item.style.display = 'flex';
+        } else {
+          item.style.display = 'none';
         }
-      }
-    }
-  };
-
-  // Initialize chart when page loads
-  document.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('profileChart');
-    if (ctx) {
-      const chart = new Chart(ctx, chartConfig);
-      loadChartData(chart);
-    }
-  });
-
-  async function loadChartData(chart) {
-    try {
-      const currentUser = getCurrentUserFromToken();
-      if (!currentUser) {
-        throw new Error('No user found');
-      }
-
-      // Fetch profile data from API
-      const response = await fetch(`${config.API_BASE_URL}/api/users/profile-stats/${currentUser.email}`, {
-        headers: { Authorization: `Bearer ${token}` }
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        chart.data.datasets[0].data = [
-          data.allProfiles || 0,
-          data.selected || 0,
-          data.selectedYou || 0,
-          data.accepted || 0,
-          data.removed || 0
-        ];
-        chart.update();
-      }
-    } catch (error) {
-      console.error('Error loading chart data:', error);
-    }
+    });
   }
-
-  function getCurrentUserFromToken() {
-    const token = localStorage.getItem("token");
-    if (!token) return null;
-
-    try {
-      const parts = token.split(".");
-      if (parts.length !== 3) return null;
-      return JSON.parse(atob(parts[1]));
-    } catch (e) {
-      console.error("Error decoding token:", e);
-      return null;
-    }
-  }
-
-  loadConversations(); // Call the original function to load conversations
 });
 
-
 async function checkUserSubscription() {
-  // This would typically check the user's subscription status from the backend
-  // For now, we'll return 'premium' to allow testing
   try {
     const token = localStorage.getItem("token");
     const response = await fetch(`${config.API_BASE_URL}/api/user/subscription-status`, {
@@ -176,11 +82,10 @@ async function checkUserSubscription() {
   } catch (error) {
     console.error('Error checking subscription:', error);
   }
-
-  return 'free'; // Default to free if unable to check
+  return 'free';
 }
 
-function loadConversations() {
+async function loadConversations() {
   try {
     const token = localStorage.getItem("token");
     const response = await fetch(`${config.API_BASE_URL}/api/user/conversations`, {
