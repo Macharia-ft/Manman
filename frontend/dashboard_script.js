@@ -1,4 +1,3 @@
-
 // JWT decode functionality
 function decodeJWT(token) {
   try {
@@ -237,14 +236,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           </button>
           <button class="remove-btn">Remove</button>
         `;
-        
+
         const selectButton = actions.querySelector(".select-btn");
         if (selectButton && !foundMatch) {
           selectButton.addEventListener("click", async () => {
             await moveProfile(user, 'all', 'selected', 'selected');
           });
         }
-        
+
         const removeButton = actions.querySelector(".remove-btn");
         if (removeButton) {
           removeButton.addEventListener("click", async () => {
@@ -257,14 +256,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           <button class="select-btn">Cancel Selection</button>
           <button class="remove-btn">Remove</button>
         `;
-        
+
         const cancelButton = actions.querySelector(".select-btn");
         if (cancelButton) {
           cancelButton.addEventListener("click", async () => {
             await moveProfile(user, 'selected', user.originalLocation || 'all', null);
           });
         }
-        
+
         const removeButton = actions.querySelector(".remove-btn");
         if (removeButton) {
           removeButton.addEventListener("click", async () => {
@@ -277,14 +276,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           <button class="select-btn">Accept</button>
           <button class="remove-btn">Reject</button>
         `;
-        
+
         const acceptButton = actions.querySelector(".select-btn");
         if (acceptButton) {
           acceptButton.addEventListener("click", async () => {
             await moveProfile(user, 'selected-you', 'accepted', 'accepted');
           });
         }
-        
+
         const rejectButton = actions.querySelector(".remove-btn");
         if (rejectButton) {
           rejectButton.addEventListener("click", async () => {
@@ -307,7 +306,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       } else if (activeSection === "removed") {
         actions.innerHTML = `<button class="restore-btn">Restore</button>`;
-        
+
         const restoreButton = actions.querySelector(".restore-btn");
         if (restoreButton) {
           restoreButton.addEventListener("click", async () => {
@@ -366,8 +365,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       renderProfiles();
 
     } catch (error) {
-      console.error("Error moving profile:", error);
-      alert("Something went wrong. Please try again.");
+      console.log('Error moving profile:', {});
+      // Don't show error notification to avoid spam
     }
   }
 
