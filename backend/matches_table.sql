@@ -17,9 +17,9 @@ CREATE TABLE IF NOT EXISTS matches (
 );
 
 -- Create index for faster queries
-CREATE INDEX idx_matches_sender ON matches(sender_id);
-CREATE INDEX idx_matches_receiver ON matches(receiver_id);
-CREATE INDEX idx_matches_status ON matches(status);
+CREATE INDEX IF NOT EXISTS idx_matches_sender ON matches(sender_id);
+CREATE INDEX IF NOT EXISTS idx_matches_receiver ON matches(receiver_id);
+CREATE INDEX IF NOT EXISTS idx_matches_status ON matches(status);
 
 -- Create user_interactions table for tracking user actions
 CREATE TABLE IF NOT EXISTS user_interactions (
@@ -40,9 +40,9 @@ CREATE TABLE IF NOT EXISTS user_interactions (
 );
 
 -- Create indexes for faster queries
-CREATE INDEX idx_interactions_current_user ON user_interactions(current_user_id);
-CREATE INDEX idx_interactions_target_user ON user_interactions(target_user_id);
-CREATE INDEX idx_interactions_action ON user_interactions(action);
+CREATE INDEX IF NOT EXISTS idx_interactions_current_user ON user_interactions(current_user_id);
+CREATE INDEX IF NOT EXISTS idx_interactions_target_user ON user_interactions(target_user_id);
+CREATE INDEX IF NOT EXISTS idx_interactions_action ON user_interactions(action);
 
 -- Add subscription column to users table if it doesn't exist
 ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription VARCHAR(20) DEFAULT 'free';
@@ -63,8 +63,8 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 );
 
 -- Create index for faster subscription queries
-CREATE INDEX idx_subscriptions_user ON subscriptions(user_id);
-CREATE INDEX idx_subscriptions_status ON subscriptions(status);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
 
 -- Clean up any existing data to prevent conflicts
 DELETE FROM user_interactions;
