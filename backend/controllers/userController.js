@@ -364,12 +364,34 @@ module.exports = {
         });
       }
 
-      // Get preferences from request body
-      const preferencesData = req.body;
+      // Update preferences
+        const preferenceFields = [
+          'pref_gender', 'pref_age_min', 'pref_age_max', 'pref_location',
+          'pref_education', 'pref_occupation', 'pref_religion', 'pref_ethnicity',
+          'pref_languages', 'pref_interests', 'pref_lifestyle', 'pref_family_plans',
+          'pref_smoking', 'pref_drinking', 'pref_exercise', 'pref_diet',
+          'pref_pets', 'pref_travel', 'pref_communication_style',
+          'pref_conflict_resolution', 'pref_love_language', 'pref_social_habits',
+          'pref_financial_habits', 'pref_living_situation', 'pref_willing_to_relocate',
+          'pref_relationship_type'
+        ];
+
+        const preferenceUpdates = {};
+        preferenceFields.forEach(field => {
+          if (req.body[field] !== undefined) {
+            let value = req.body[field];
+            // Handle array fields - convert comma-separated strings to proper PostgreSQL arrays
+            if (['pref_languages', 'pref_interests'].includes(field) && typeof value === 'string') {
+              // Convert "English,Swahili" to ["English", "Swahili"]
+              value = value.split(',').map(item => item.trim()).filter(item => item.length > 0);
+            }
+            preferenceUpdates[field] = value;
+          }
+        });
 
       // Update user record with preferences
       const updateData = {
-        ...preferencesData,
+        ...preferenceUpdates,
         current_step: 'submission',
         is_complete: true,
         updated_at: new Date().toISOString()

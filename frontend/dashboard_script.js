@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div class="no-matches-message">
             <h3>No users found</h3>
             <p>No users found matching your preferences. Try adjusting your gender, location, or age range preferences.</p>
-            <button onclick="window.location.href='adjust-preferences.html'" class="adjust-preferences-btn">
+            <button onclick="window.location.href='edit-profile.html'" class="adjust-preferences-btn">
               Adjust Preferences
             </button>
           </div>
