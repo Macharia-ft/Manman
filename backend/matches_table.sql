@@ -26,15 +26,17 @@ CREATE TABLE IF NOT EXISTS user_interactions (
     id SERIAL PRIMARY KEY,
     current_user_id INTEGER NOT NULL,
     target_user_id INTEGER NOT NULL,
-    action VARCHAR(20) NOT NULL, -- 'selected', 'removed', 'accepted', 'rejected'
+    action VARCHAR(20) NOT NULL, -- 'selected', 'removed', 'accepted', 'rejected', 'matched'
+    original_location VARCHAR(20) DEFAULT 'all', -- Track where profile came from
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     -- Add foreign key constraints
     CONSTRAINT fk_current_user FOREIGN KEY (current_user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_target_user FOREIGN KEY (target_user_id) REFERENCES users(id) ON DELETE CASCADE,
     
-    -- Ensure no duplicate interactions between same users for same action
-    CONSTRAINT unique_interaction UNIQUE (current_user_id, target_user_id, action)
+    -- Ensure only one active interaction per user pair
+    CONSTRAINT unique_active_interaction UNIQUE (current_user_id, target_user_id)
 );
 
 -- Create indexes for faster queries
@@ -42,15 +44,9 @@ CREATE INDEX idx_interactions_current_user ON user_interactions(current_user_id)
 CREATE INDEX idx_interactions_target_user ON user_interactions(target_user_id);
 CREATE INDEX idx_interactions_action ON user_interactions(action);
 
--- Insert sample data (optional - remove if not needed)
--- This is just for testing purposes
-INSERT INTO matches (sender_id, receiver_id, status) VALUES 
-(1, 2, 'pending'),
-(3, 1, 'accepted'),
-(2, 3, 'rejected');
-
 -- Add subscription column to users table if it doesn't exist
 ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription VARCHAR(20) DEFAULT 'free';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS found_match BOOLEAN DEFAULT FALSE;
 
 -- Create subscriptions table for tracking premium subscriptions
 CREATE TABLE IF NOT EXISTS subscriptions (
@@ -69,3 +65,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 -- Create index for faster subscription queries
 CREATE INDEX idx_subscriptions_user ON subscriptions(user_id);
 CREATE INDEX idx_subscriptions_status ON subscriptions(status);
+
+-- Clean up any existing data to prevent conflicts
+DELETE FROM user_interactions;
+DELETE FROM matches;

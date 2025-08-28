@@ -1,14 +1,17 @@
+
 // Add event listeners after DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
   // Add null checks for all event listeners
   const container = document.getElementById('user-container');
   const filterButtons = document.querySelectorAll('.filters button');
+  const loadingSpinner = document.getElementById('loadingSpinner');
 
   const token = localStorage.getItem("token");
   if (!token) {
     if (container) {
       container.innerHTML = "<p>Please log in first!</p>";
     }
+    if (loadingSpinner) loadingSpinner.style.display = 'none';
     return;
   }
 
@@ -19,19 +22,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (container) {
       container.innerHTML = "<p>Unable to retrieve user info from token.</p>";
     }
+    if (loadingSpinner) loadingSpinner.style.display = 'none';
     return;
   }
 
   // Make local storage user-specific to prevent conflicts when multiple users use same device
   const userStorageKey = (key) => `${key}_${currentUserEmail}`;
 
-  let allProfiles = JSON.parse(localStorage.getItem(userStorageKey("allProfiles"))) || [];
-  let selectedProfiles = JSON.parse(localStorage.getItem(userStorageKey("selectedProfiles"))) || [];
-  let selectedYouProfiles = JSON.parse(localStorage.getItem(userStorageKey("selectedYouProfiles"))) || [];
-  let removedProfiles = JSON.parse(localStorage.getItem(userStorageKey("removedProfiles"))) || [];
-  let acceptedProfiles = JSON.parse(localStorage.getItem(userStorageKey("acceptedProfiles"))) || [];
-  let matchedProfiles = JSON.parse(localStorage.getItem(userStorageKey("matchedProfiles"))) || [];
+  let allProfiles = [];
+  let selectedProfiles = [];
+  let selectedYouProfiles = [];
+  let removedProfiles = [];
+  let acceptedProfiles = [];
+  let matchedProfiles = [];
   let activeSection = "all";
+
+  // Show spinner
+  if (loadingSpinner) loadingSpinner.style.display = 'flex';
+  if (container) container.style.display = 'none';
 
   try {
     const response = await fetch(`${config.API_BASE_URL}/api/user/profile-photo/${currentUserEmail}`, {
@@ -87,16 +95,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (responseData.shouldAdjustPreferences) {
       allProfiles = [];
-      localStorage.setItem(userStorageKey("allProfiles"), JSON.stringify(allProfiles));
+    } else {
+      allProfiles = responseData.users || responseData || [];
     }
 
-    // Filter out profiles that are already in other sections
-    allProfiles = (responseData.users || responseData).filter(profile =>
-      !selectedProfiles.some(selected => selected.id === profile.id) &&
-      !removedProfiles.some(removed => removed.id === profile.id) &&
-      !acceptedProfiles.some(accepted => accepted.id === profile.id) &&
-      !matchedProfiles.some(matched => matched.id === profile.id)
-    );
+    // Fetch all user interactions to categorize profiles
+    const interactionsResponse = await fetch(`${config.API_BASE_URL}/api/users/interactions/${currentUserEmail}`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    let userInteractions = [];
+    if (interactionsResponse.ok) {
+      userInteractions = await interactionsResponse.json();
+    }
+
+    // Categorize profiles based on interactions
+    selectedProfiles = userInteractions.filter(u => u.action === 'selected').map(u => ({...u, originalLocation: u.original_location || 'all'}));
+    removedProfiles = userInteractions.filter(u => u.action === 'removed').map(u => ({...u, originalLocation: u.original_location || 'all'}));
+    acceptedProfiles = userInteractions.filter(u => u.action === 'accepted').map(u => ({...u, originalLocation: u.original_location || 'selected-you'}));
+    matchedProfiles = userInteractions.filter(u => u.action === 'matched').map(u => ({...u, originalLocation: u.original_location || 'accepted'}));
+
+    // Remove already categorized profiles from allProfiles
+    const interactedUserIds = userInteractions.map(u => u.id);
+    allProfiles = allProfiles.filter(profile => !interactedUserIds.includes(profile.id));
 
     const selectedYouResponse = await fetch(`${config.API_BASE_URL}/api/users/selected-you/${currentUserEmail}`, {
       method: 'GET',
@@ -105,18 +127,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (selectedYouResponse.ok) {
       selectedYouProfiles = await selectedYouResponse.json();
-      localStorage.setItem(userStorageKey("selectedYouProfiles"), JSON.stringify(selectedYouProfiles));
+      selectedYouProfiles = selectedYouProfiles.map(u => ({...u, originalLocation: 'selected-you'}));
     } else {
       console.error("Error fetching selected-you profiles.");
     }
+
+    // Hide spinner and show content
+    if (loadingSpinner) loadingSpinner.style.display = 'none';
+    if (container) container.style.display = 'block';
 
     renderProfiles();
 
   } catch (error) {
     console.error(error);
     if (container) {
-      container.innerHTML = `<p>Error: ${error.message}</p>`;
+      container.innerHTML = `<p>Error: ${error.message}</p>';
+      container.style.display = 'block';
     }
+    if (loadingSpinner) loadingSpinner.style.display = 'none';
   }
 
   filterButtons.forEach(btn => {
@@ -163,6 +191,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const videoUrl = user.profile_video_url && user.profile_video_url.trim() !== '' ? user.profile_video_url : null;
       const countryOfBirth = user.country_of_birth || 'Unknown';
       const matchScore = user.matchScore || '0%';
+      const foundMatch = user.found_match;
 
       const userCard = document.createElement("div");
       userCard.classList.add("profile-card");
@@ -176,6 +205,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <h3>${user.full_name || 'Unknown Name'}</h3>
             <p>${age} yrs</p>
             <p>${countryOfBirth}</p>
+            ${foundMatch ? '<p style="color: red; font-weight: bold;">User Found Match</p>' : ''}
           </div>
           <span class="score">${matchScore}</span>
         </div>
@@ -193,62 +223,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (activeSection === "all") {
         actions.innerHTML = `
-          <button class="select-btn">Select</button>
+          <button class="select-btn" ${foundMatch ? 'disabled' : ''}>
+            ${foundMatch ? 'User Found Match' : 'Select'}
+          </button>
           <button class="remove-btn">Remove</button>
         `;
+        
         const selectButton = actions.querySelector(".select-btn");
-        if (selectButton) {
+        if (selectButton && !foundMatch) {
           selectButton.addEventListener("click", async () => {
-            user.originalLocation = 'all';
-            selectedProfiles.push(user);
-            allProfiles = allProfiles.filter(u => u.id !== user.id);
-            updateLocalStorage();
-
-            try {
-              const response = await fetch(`${config.API_BASE_URL}/api/users/select/${currentUserEmail}`, {
-                method: "POST",
-                headers: {
-                  "Authorization": `Bearer ${token}`,
-                  "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                  selectedUserId: user.id,
-                  action: "selected"
-                })
-              });
-
-              if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-                throw new Error(errorData.message || 'Failed to update interaction');
-              }
-
-              const responseData = await response.json();
-              console.log("✅ User selected successfully:", responseData);
-              renderProfiles();
-            } catch (error) {
-              console.error("Error selecting user:", error);
-              // Revert the changes if API call failed
-              allProfiles.push(user);
-              selectedProfiles = selectedProfiles.filter(u => u.id !== user.id);
-              updateLocalStorage();
-              renderProfiles();
-              alert("Something went wrong while selecting the user. Please try again.");
-            }
+            await moveProfile(user, 'all', 'selected', 'selected');
           });
-        } else {
-          console.error("Select button not found for user:", user.id);
         }
+        
         const removeButton = actions.querySelector(".remove-btn");
         if (removeButton) {
-          removeButton.addEventListener("click", () => {
-            user.originalLocation = 'all';
-            removedProfiles.push(user);
-            allProfiles = allProfiles.filter(u => u.id !== user.id);
-            updateLocalStorage();
-            renderProfiles();
+          removeButton.addEventListener("click", async () => {
+            await moveProfile(user, 'all', 'removed', 'removed');
           });
-        } else {
-          console.error("Remove button not found for user:", user.id);
         }
 
       } else if (activeSection === "selected") {
@@ -256,32 +248,19 @@ document.addEventListener('DOMContentLoaded', async () => {
           <button class="select-btn">Cancel Selection</button>
           <button class="remove-btn">Remove</button>
         `;
+        
         const cancelButton = actions.querySelector(".select-btn");
         if (cancelButton) {
-          cancelButton.addEventListener("click", () => {
-            // Return to original location (usually 'all')
-            const originalLocation = user.originalLocation || 'all';
-            if (originalLocation === 'all') {
-              allProfiles.push(user);
-            }
-            selectedProfiles = selectedProfiles.filter(u => u.id !== user.id);
-            updateLocalStorage();
-            renderProfiles();
+          cancelButton.addEventListener("click", async () => {
+            await moveProfile(user, 'selected', user.originalLocation || 'all', null);
           });
-        } else {
-          console.error("Cancel button not found for user:", user.id);
         }
+        
         const removeButton = actions.querySelector(".remove-btn");
         if (removeButton) {
-          removeButton.addEventListener("click", () => {
-            user.originalLocation = user.originalLocation || 'selected';
-            removedProfiles.push(user);
-            selectedProfiles = selectedProfiles.filter(u => u.id !== user.id);
-            updateLocalStorage();
-            renderProfiles();
+          removeButton.addEventListener("click", async () => {
+            await moveProfile(user, 'selected', 'removed', 'removed');
           });
-        } else {
-          console.error("Remove button not found for user:", user.id);
         }
 
       } else if (activeSection === "selected-you") {
@@ -289,35 +268,22 @@ document.addEventListener('DOMContentLoaded', async () => {
           <button class="select-btn">Accept</button>
           <button class="remove-btn">Reject</button>
         `;
+        
         const acceptButton = actions.querySelector(".select-btn");
         if (acceptButton) {
           acceptButton.addEventListener("click", async () => {
-            const subscription = await checkUserSubscription();
-            if (subscription === 'free') {
-              showPremiumNotification();
-            } else {
-              user.originalLocation = 'selected-you';
-              acceptedProfiles.push(user);
-              selectedYouProfiles = selectedYouProfiles.filter(u => u.id !== user.id);
-              updateLocalStorage();
-              sendMatchRequest(user);
-              renderProfiles();
-            }
+            await moveProfile(user, 'selected-you', 'accepted', 'accepted');
           });
         }
+        
         const rejectButton = actions.querySelector(".remove-btn");
         if (rejectButton) {
-          rejectButton.addEventListener("click", () => {
-            user.originalLocation = 'selected-you';
-            removedProfiles.push(user);
-            selectedYouProfiles = selectedYouProfiles.filter(u => u.id !== user.id);
-            updateLocalStorage();
-            renderProfiles();
+          rejectButton.addEventListener("click", async () => {
+            await moveProfile(user, 'selected-you', 'removed', 'removed');
           });
         }
 
       } else if (activeSection === "accepted") {
-        // Check if this is a mutual match
         const isMutualMatch = user.isMutualMatch || false;
 
         if (isMutualMatch) {
@@ -325,6 +291,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <button class="select-btn matched-btn">Matched - Chat</button>
             <button class="remove-btn">Cancel Match</button>
           `;
+          
           const chatButton = actions.querySelector(".select-btn");
           if (chatButton) {
             chatButton.addEventListener("click", async () => {
@@ -332,30 +299,22 @@ document.addEventListener('DOMContentLoaded', async () => {
               if (subscription === 'free') {
                 showPremiumNotification();
               } else {
-                // Move to matched section and open chat
-                matchedProfiles.push(user);
-                acceptedProfiles = acceptedProfiles.filter(u => u.id !== user.id);
-                updateLocalStorage();
+                await moveProfile(user, 'accepted', 'matched', 'matched');
                 window.location.href = `chat.html?userId=${user.id}`;
               }
             });
           }
         } else {
           actions.innerHTML = `
-            <button class="select-btn disabled-btn" disabled>User Found Match</button>
+            <button class="select-btn disabled-btn" disabled>Waiting for Response</button>
             <button class="remove-btn">Cancel Match</button>
           `;
         }
 
         const cancelMatchButton = actions.querySelector(".remove-btn");
         if (cancelMatchButton) {
-          cancelMatchButton.addEventListener("click", () => {
-            // Store original location for proper restoration
-            user.originalLocation = user.originalLocation || 'all';
-            removedProfiles.push(user);
-            acceptedProfiles = acceptedProfiles.filter(u => u.id !== user.id);
-            updateLocalStorage();
-            renderProfiles();
+          cancelMatchButton.addEventListener("click", async () => {
+            await moveProfile(user, 'accepted', 'removed', 'removed');
           });
         }
 
@@ -364,6 +323,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <button class="select-btn">Open Chat</button>
           <button class="remove-btn">Unmatch</button>
         `;
+        
         const openChatButton = actions.querySelector(".select-btn");
         if (openChatButton) {
           openChatButton.addEventListener("click", async () => {
@@ -375,37 +335,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
           });
         }
+        
         const unmatchButton = actions.querySelector(".remove-btn");
         if (unmatchButton) {
-          unmatchButton.addEventListener("click", () => {
-            removedProfiles.push(user);
-            matchedProfiles = matchedProfiles.filter(u => u.id !== user.id);
-            updateLocalStorage();
-            renderProfiles();
+          unmatchButton.addEventListener("click", async () => {
+            await moveProfile(user, 'matched', 'removed', 'removed');
           });
         }
 
       } else if (activeSection === "removed") {
         actions.innerHTML = `<button class="restore-btn">Restore</button>`;
+        
         const restoreButton = actions.querySelector(".restore-btn");
         if (restoreButton) {
-          restoreButton.addEventListener("click", () => {
-            // Restore to original location
-            const originalLocation = user.originalLocation || 'all';
-            
-            if (originalLocation === 'selected') {
-              selectedProfiles.push(user);
-            } else if (originalLocation === 'selected-you') {
-              selectedYouProfiles.push(user);
-            } else if (originalLocation === 'accepted') {
-              acceptedProfiles.push(user);
-            } else {
-              allProfiles.push(user);
-            }
-            
-            removedProfiles = removedProfiles.filter(u => u.id !== user.id);
-            updateLocalStorage();
-            renderProfiles();
+          restoreButton.addEventListener("click", async () => {
+            await moveProfile(user, 'removed', user.originalLocation || 'all', null);
           });
         }
       }
@@ -420,6 +364,51 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       container.appendChild(userCard);
     });
+  }
+
+  async function moveProfile(user, fromSection, toSection, action) {
+    try {
+      // Update backend
+      if (action) {
+        const response = await fetch(`${config.API_BASE_URL}/api/users/interact`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            targetUserId: user.id,
+            action: action,
+            originalLocation: user.originalLocation || fromSection
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to update interaction');
+        }
+      }
+
+      // Update frontend arrays
+      if (fromSection === 'all') allProfiles = allProfiles.filter(u => u.id !== user.id);
+      if (fromSection === 'selected') selectedProfiles = selectedProfiles.filter(u => u.id !== user.id);
+      if (fromSection === 'selected-you') selectedYouProfiles = selectedYouProfiles.filter(u => u.id !== user.id);
+      if (fromSection === 'accepted') acceptedProfiles = acceptedProfiles.filter(u => u.id !== user.id);
+      if (fromSection === 'matched') matchedProfiles = matchedProfiles.filter(u => u.id !== user.id);
+      if (fromSection === 'removed') removedProfiles = removedProfiles.filter(u => u.id !== user.id);
+
+      if (toSection === 'all') allProfiles.push(user);
+      if (toSection === 'selected') selectedProfiles.push(user);
+      if (toSection === 'selected-you') selectedYouProfiles.push(user);
+      if (toSection === 'accepted') acceptedProfiles.push(user);
+      if (toSection === 'matched') matchedProfiles.push(user);
+      if (toSection === 'removed') removedProfiles.push(user);
+
+      renderProfiles();
+
+    } catch (error) {
+      console.error("Error moving profile:", error);
+      alert("Something went wrong. Please try again.");
+    }
   }
 
   function showFloatingProfile(user, action = 'view') {
@@ -471,15 +460,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  function updateLocalStorage() {
-    localStorage.setItem(userStorageKey("allProfiles"), JSON.stringify(allProfiles));
-    localStorage.setItem(userStorageKey("selectedProfiles"), JSON.stringify(selectedProfiles));
-    localStorage.setItem(userStorageKey("selectedYouProfiles"), JSON.stringify(selectedYouProfiles));
-    localStorage.setItem(userStorageKey("removedProfiles"), JSON.stringify(removedProfiles));
-    localStorage.setItem(userStorageKey("acceptedProfiles"), JSON.stringify(acceptedProfiles));
-    localStorage.setItem(userStorageKey("matchedProfiles"), JSON.stringify(matchedProfiles));
-  }
-
   function getCurrentUserFromToken() {
     const token = localStorage.getItem("token");
     if (!token) return null;
@@ -490,23 +470,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (e) {
       console.error("Error decoding token:", e);
       return null;
-    }
-  }
-
-  async function sendMatchRequest(user) {
-    const response = await fetch(`${config.API_BASE_URL}/api/users/match/${currentUserEmail}`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        matchedUserId: user.id,
-      })
-    });
-
-    if (!response.ok) {
-      console.error("Error sending match request:", response.status);
     }
   }
 
