@@ -14,4 +14,10 @@ router.post("/admin/user/status", adminController.updateUserStatus);
 // Get user by ID (admin only)
 router.get("/admin/users/:id", adminController.getUserById);
 
+// Grant premium access to a user (admin only)
+router.post("/admin/grant-premium", adminController.grantPremiumAccess);
+
+// Remove premium access from a user (admin only)
+router.post("/admin/remove-premium", adminController.removePremiumAccess);
+
 module.exports = router;

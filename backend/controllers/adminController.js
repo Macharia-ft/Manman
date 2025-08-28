@@ -231,3 +231,285 @@ exports.getUserById = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+// Grant premium access to a user
+exports.grantPremiumAccess = async (req, res) => {
+  try {
+    const { email, days = 30 } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required" });
+    }
+
+    // Find the user by email
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id, email')
+      .eq('email', email)
+      .single();
+
+    if (userError || !user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Check if user already has an active subscription
+    const { data: existingSubscription, error: subError } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .single();
+
+    if (existingSubscription) {
+      // Update existing subscription to extend it
+      const newEndDate = new Date();
+      newEndDate.setDate(newEndDate.getDate() + parseInt(days));
+
+      const { error: updateError } = await supabase
+        .from('subscriptions')
+        .update({
+          end_date: newEndDate.toISOString(),
+          plan: 'premium'
+        })
+        .eq('id', existingSubscription.id);
+
+      if (updateError) {
+        return res.status(500).json({ success: false, message: updateError.message });
+      }
+    } else {
+      // Create new subscription
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + parseInt(days));
+
+      const { error: insertError } = await supabase
+        .from('subscriptions')
+        .insert({
+          user_id: user.id,
+          plan: 'premium',
+          status: 'active',
+          start_date: new Date().toISOString(),
+          end_date: endDate.toISOString()
+        });
+
+      if (insertError) {
+        return res.status(500).json({ success: false, message: insertError.message });
+      }
+    }
+
+    // Update user's subscription status
+    const { error: userUpdateError } = await supabase
+      .from('users')
+      .update({ subscription: 'premium' })
+      .eq('id', user.id);
+
+    if (userUpdateError) {
+      return res.status(500).json({ success: false, message: userUpdateError.message });
+    }
+
+    res.json({
+      success: true,
+      message: `Premium access granted to ${email} for ${days} days`
+    });
+
+  } catch (error) {
+    console.error("Grant premium access error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// Remove premium access from a user
+exports.removePremiumAccess = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required" });
+    }
+
+    // Find the user by email
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id, email')
+      .eq('email', email)
+      .single();
+
+    if (userError || !user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Deactivate all subscriptions for this user
+    const { error: subError } = await supabase
+      .from('subscriptions')
+      .update({
+        status: 'cancelled',
+        end_date: new Date().toISOString()
+      })
+      .eq('user_id', user.id);
+
+    if (subError) {
+      return res.status(500).json({ success: false, message: subError.message });
+    }
+
+    // Update user's subscription status to free
+    const { error: userUpdateError } = await supabase
+      .from('users')
+      .update({ subscription: 'free' })
+      .eq('id', user.id);
+
+    if (userUpdateError) {
+      return res.status(500).json({ success: false, message: userUpdateError.message });
+    }
+
+    res.json({
+      success: true,
+      message: `Premium access removed from ${email}`
+    });
+
+  } catch (error) {
+    console.error("Remove premium access error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+module.exports = {
+  adminLogin,
+  getAllUsers,
+  updateUserStatus,
+  getUserById,
+  grantPremiumAccess: async (req, res) => {
+    try {
+      const { email, days = 30 } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ success: false, message: "Email is required" });
+      }
+
+      // Find the user by email
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('id, email')
+        .eq('email', email)
+        .single();
+
+      if (userError || !user) {
+        return res.status(404).json({ success: false, message: "User not found" });
+      }
+
+      // Check if user already has an active subscription
+      const { data: existingSubscription, error: subError } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .single();
+
+      if (existingSubscription) {
+        // Update existing subscription to extend it
+        const newEndDate = new Date();
+        newEndDate.setDate(newEndDate.getDate() + parseInt(days));
+
+        const { error: updateError } = await supabase
+          .from('subscriptions')
+          .update({
+            end_date: newEndDate.toISOString(),
+            plan: 'premium'
+          })
+          .eq('id', existingSubscription.id);
+
+        if (updateError) {
+          return res.status(500).json({ success: false, message: updateError.message });
+        }
+      } else {
+        // Create new subscription
+        const endDate = new Date();
+        endDate.setDate(endDate.getDate() + parseInt(days));
+
+        const { error: insertError } = await supabase
+          .from('subscriptions')
+          .insert({
+            user_id: user.id,
+            plan: 'premium',
+            status: 'active',
+            start_date: new Date().toISOString(),
+            end_date: endDate.toISOString()
+          });
+
+        if (insertError) {
+          return res.status(500).json({ success: false, message: insertError.message });
+        }
+      }
+
+      // Update user's subscription status
+      const { error: userUpdateError } = await supabase
+        .from('users')
+        .update({ subscription: 'premium' })
+        .eq('id', user.id);
+
+      if (userUpdateError) {
+        return res.status(500).json({ success: false, message: userUpdateError.message });
+      }
+
+      res.json({
+        success: true,
+        message: `Premium access granted to ${email} for ${days} days`
+      });
+
+    } catch (error) {
+      console.error("Grant premium access error:", error);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  },
+
+  removePremiumAccess: async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ success: false, message: "Email is required" });
+      }
+
+      // Find the user by email
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('id, email')
+        .eq('email', email)
+        .single();
+
+      if (userError || !user) {
+        return res.status(404).json({ success: false, message: "User not found" });
+      }
+
+      // Deactivate all subscriptions for this user
+      const { error: subError } = await supabase
+        .from('subscriptions')
+        .update({
+          status: 'cancelled',
+          end_date: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+
+      if (subError) {
+        return res.status(500).json({ success: false, message: subError.message });
+      }
+
+      // Update user's subscription status to free
+      const { error: userUpdateError } = await supabase
+        .from('users')
+        .update({ subscription: 'free' })
+        .eq('id', user.id);
+
+      if (userUpdateError) {
+        return res.status(500).json({ success: false, message: userUpdateError.message });
+      }
+
+      res.json({
+        success: true,
+        message: `Premium access removed from ${email}`
+      });
+
+    } catch (error) {
+      console.error("Remove premium access error:", error);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  }
+};
