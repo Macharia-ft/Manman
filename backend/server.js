@@ -538,33 +538,6 @@ app.post('/api/users/select/:email', async (req, res) => {
   } catch (error) {
     console.error('❌ Error in select user endpoint:', error);
     return res.status(500).json({ success: false, message: 'Server error during user selection' });
-  }d_user_id', selectedUserId);
-
-      if (updateError) {
-        return res.status(500).json({ success: false, message: 'Error updating interaction' });
-      }
-    } else {
-      // If no interaction exists, insert a new record
-      const { error: insertError } = await supabase
-        .from('user_interactions')
-        .insert([
-          {
-            current_user_id: currentUserId,
-            selected_user_id: selectedUserId,
-            action: action
-          }
-        ]);
-
-      if (insertError) {
-        return res.status(500).json({ success: false, message: 'Error inserting interaction' });
-      }
-    }
-
-    res.json({ success: true, message: 'User selected successfully' });
-
-  } catch (error) {
-    console.error("Error occurred:", error.message);
-    res.status(500).json({ success: false, message: error.message });
   }
 });
 
