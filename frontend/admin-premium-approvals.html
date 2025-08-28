@@ -1,0 +1,51 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Premium Approvals</title>
+    <link rel="stylesheet" href="admin-premium-approvals.css">
+</head>
+<body>
+    <div class="admin-container">
+        <header>
+            <h1>Premium Subscription Approvals</h1>
+            <nav>
+                <a href="admin-dashboard.html">Dashboard</a>
+                <a href="admin-media-updates.html">Media Updates</a>
+                <a href="admin-premium-approvals.html" class="active">Premium Approvals</a>
+            </nav>
+        </header>
+
+        <div class="content">
+            <div class="stats">
+                <div class="stat-card">
+                    <h3>Pending Approvals</h3>
+                    <span id="pendingCount">0</span>
+                </div>
+                <div class="stat-card">
+                    <h3>Approved Today</h3>
+                    <span id="approvedCount">0</span>
+                </div>
+                <div class="stat-card">
+                    <h3>Total Revenue</h3>
+                    <span id="revenueCount">$0</span>
+                </div>
+            </div>
+
+            <div class="filters">
+                <button class="filter-btn active" data-status="pending">Pending</button>
+                <button class="filter-btn" data-status="approved">Approved</button>
+                <button class="filter-btn" data-status="rejected">Rejected</button>
+            </div>
+
+            <div id="subscriptionsContainer" class="subscriptions-container">
+                <!-- Premium subscriptions will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="admin-premium-approvals.js"></script>
+</body>
+</html>

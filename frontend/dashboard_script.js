@@ -239,8 +239,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const selectButton = actions.querySelector(".select-btn");
         if (selectButton && !foundMatch) {
-          selectButton.addEventListener("click", async () => {
-            await moveProfile(user, 'all', 'selected', 'selected');
+          selectButton.addEventListener("click", async (event) => {
+            // Prevent double-clicking
+            if (selectButton.disabled) return;
+            selectButton.disabled = true;
+            selectButton.textContent = 'Processing...';
+            
+            try {
+              await moveProfile(user, 'all', 'selected', 'selected');
+            } finally {
+              selectButton.disabled = false;
+              selectButton.textContent = 'Select';
+            }
           });
         }
 
@@ -279,11 +289,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const acceptButton = actions.querySelector(".select-btn");
         if (acceptButton) {
-          acceptButton.addEventListener("click", async () => {
-            // When accepting, we need to set found_match to true for the current user's interaction
-            // and also potentially update the other user's profile interaction if the backend supports it.
-            // For now, we focus on moving the profile and marking the interaction.
-            await moveProfile(user, 'selected-you', 'accepted', 'accepted');
+          acceptButton.addEventListener("click", async (event) => {
+            // Prevent double-clicking
+            if (acceptButton.disabled) return;
+            acceptButton.disabled = true;
+            acceptButton.textContent = 'Processing...';
+            
+            try {
+              // When accepting, create mutual match
+              await createMutualMatch(user, 'selected-you', 'accepted', 'accepted');
+            } finally {
+              acceptButton.disabled = false;
+              acceptButton.textContent = 'Accept';
+            }
           });
         }
 
@@ -305,14 +323,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         const matchedButton = actions.querySelector(".match-btn");
         if (matchedButton) {
           matchedButton.addEventListener("click", async (event) => {
-            const subscription = await checkUserSubscription();
-            if (subscription === 'free') {
-              showPremiumNotification();
-            } else {
-              // Move profile to chat or a new 'matched' section if applicable
-              // For now, let's assume moving to 'accepted' and then handling chat redirection
-              await moveProfile(user, 'accepted', 'accepted', 'matched'); // Assuming 'matched' action updates backend
-              window.location.href = `chat.html?userId=${user.id}`; // Redirect to chat page
+            // Prevent double-clicking
+            if (matchedButton.disabled) return;
+            matchedButton.disabled = true;
+            matchedButton.textContent = 'Loading...';
+            
+            try {
+              const subscription = await checkUserSubscription();
+              if (subscription === 'free') {
+                showPremiumNotification();
+              } else {
+                // Redirect to chat page with the matched user
+                window.location.href = `chat.html?userId=${user.id}`;
+              }
+            } finally {
+              matchedButton.disabled = false;
+              matchedButton.textContent = 'Matched';
             }
           });
         }
@@ -345,6 +371,37 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       container.appendChild(userCard);
     });
+  }
+
+  async function createMutualMatch(user, fromSection, toSection, action) {
+    try {
+      // Create mutual match - both users go to accepted
+      const response = await fetch(`${config.API_BASE_URL}/api/users/mutual-match`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          targetUserId: user.id,
+          action: action,
+          originalLocation: user.originalLocation || fromSection
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create mutual match');
+      }
+
+      // Update frontend arrays - remove from selected-you, add to accepted
+      selectedYouProfiles = selectedYouProfiles.filter(u => u.id !== user.id);
+      acceptedProfiles.push({ ...user, originalLocation: user.originalLocation || fromSection });
+
+      renderProfiles();
+
+    } catch (error) {
+      console.log('Error creating mutual match:', error);
+    }
   }
 
   async function moveProfile(user, fromSection, toSection, action) {

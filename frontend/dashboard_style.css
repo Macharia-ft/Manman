@@ -276,6 +276,35 @@ body {
   background-color: #138496;
 }
 
+.match-btn {
+  flex: 1;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  animation: pulse 2s infinite;
+}
+
+.match-btn:hover {
+  background-color: #218838;
+}
+
+.match-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+  animation: none;
+}
+
+.select-btn:disabled,
+.remove-btn:disabled {
+  background-color: #6c757d !important;
+  cursor: not-allowed !important;
+  opacity: 0.6;
+}
+
 .filters button[data-section="matched"].active {
   background-color: #28a745;
   color: white;

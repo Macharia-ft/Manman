@@ -128,3 +128,35 @@
   <script src="chat.js"></script>
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <link rel="stylesheet" href="chat.css">
+</head>
+<body>
+    <div class="chat-container">
+        <header class="chat-header">
+            <button class="back-btn" onclick="window.history.back()">← Back</button>
+            <div class="chat-user-info">
+                <img id="chatUserPhoto" src="https://via.placeholder.com/40" alt="User" class="chat-user-photo">
+                <h3 id="chatUserName">Loading...</h3>
+            </div>
+        </header>
+
+        <div class="messages-container" id="messagesContainer">
+            <!-- Messages will be loaded here -->
+        </div>
+
+        <div class="message-input-container">
+            <input type="text" id="messageInput" placeholder="Type a message..." maxlength="500">
+            <button id="sendButton">Send</button>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="chat.js"></script>
+</body>
+</html>

@@ -3,6 +3,8 @@ const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const { createClient } = require("@supabase/supabase-js");
+const upload = require('./middleware/upload'); // Assuming you have multer setup in middleware
+const userController = require('./controllers/userController'); // Assuming you have userController
 
 
 // Routes
@@ -38,7 +40,7 @@ app.use("/api", uploadIdentityRoute);
 app.use("/api", personalRoute);
 app.use("/api", preferencesRoute);
 app.use("/api", statusRoute);
-app.use("/api", adminRoutes);
+app.use('/api/admin', adminRoutes);
 app.use("/api/user", userRoutes);
 
 // ✅ Fetch the user ID based on email
@@ -499,7 +501,7 @@ app.get('/api/users/interactions/:email', async (req, res) => {
 // ✅ API route to handle user interactions (select, remove, accept, etc.)
 app.post('/api/users/interact', async (req, res) => {
   const token = req.headers.authorization?.split(" ")[1];
-  
+
   if (!token) {
     return res.status(401).json({ success: false, message: "Missing token" });
   }
@@ -560,7 +562,7 @@ app.post('/api/users/interact', async (req, res) => {
 // ✅ API route to update found match status
 app.post('/api/users/found-match-status', async (req, res) => {
   const token = req.headers.authorization?.split(" ")[1];
-  
+
   if (!token) {
     return res.status(401).json({ success: false, message: "Missing token" });
   }
@@ -588,7 +590,7 @@ app.post('/api/users/found-match-status', async (req, res) => {
 // ✅ API route to handle match status (both users found match)
 app.post('/api/users/match-status', async (req, res) => {
   const token = req.headers.authorization?.split(" ")[1];
-  
+
   if (!token) {
     return res.status(401).json({ success: false, message: "Missing token" });
   }
@@ -692,6 +694,220 @@ app.post('/api/users/select/:email', async (req, res) => {
   }
 });
 
+// Get user subscription status
+app.get("/api/user/subscription-status", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const email = decoded.email;
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('subscription')
+      .eq('email', email)
+      .single();
+
+    if (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+
+    res.json({ subscription: data?.subscription || 'free' });
+  } catch (error) {
+    console.error("Error checking subscription:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Create mutual match
+app.post("/api/users/mutual-match", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const currentUserEmail = decoded.email;
+    const { targetUserId, action, originalLocation } = req.body;
+
+    // Get current user ID
+    const currentUserId = await getUserIdByEmail(currentUserEmail);
+
+    // Create interaction for current user accepting the other user
+    await supabase
+      .from('user_interactions')
+      .upsert({
+        current_user_id: currentUserId,
+        target_user_id: targetUserId,
+        action: 'accepted',
+        original_location: originalLocation || 'selected-you'
+      });
+
+    // Create reverse interaction - other user also goes to accepted for current user
+    await supabase
+      .from('user_interactions')
+      .upsert({
+        current_user_id: targetUserId,
+        target_user_id: currentUserId,
+        action: 'accepted',
+        original_location: 'selected'
+      });
+
+    res.json({ success: true, message: "Mutual match created successfully" });
+  } catch (error) {
+    console.error("Error creating mutual match:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Send match request
+app.post("/api/users/match-request", upload.none(), userController.sendMatchRequest);
+
+// Admin media updates endpoints
+app.get('/api/admin/media-updates', async (req, res) => {
+  try {
+    const { status = 'pending' } = req.query;
+
+    const { data, error } = await supabase
+      .from('pending_media_updates')
+      .select('*')
+      .eq('status', status)
+      .order('requested_at', { ascending: false });
+
+    if (error) throw error;
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching media updates:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.get('/api/admin/media-updates/stats', async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data: pending } = await supabase
+      .from('pending_media_updates')
+      .select('id')
+      .eq('status', 'pending');
+
+    const { data: approved } = await supabase
+      .from('pending_media_updates')
+      .select('id')
+      .eq('status', 'approved')
+      .gte('reviewed_at', today);
+
+    const { data: rejected } = await supabase
+      .from('pending_media_updates')
+      .select('id')
+      .eq('status', 'rejected')
+      .gte('reviewed_at', today);
+
+    res.json({
+      pending: pending?.length || 0,
+      approved: approved?.length || 0,
+      rejected: rejected?.length || 0
+    });
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/api/admin/media-updates/review', async (req, res) => {
+  try {
+    const { updateId, status, adminMessage } = req.body;
+
+    if (status === 'approved') {
+      // Get the pending update
+      const { data: update } = await supabase
+        .from('pending_media_updates')
+        .select('*')
+        .eq('id', updateId)
+        .single();
+
+      if (update) {
+        // Update user's actual media URLs
+        const updateData = {};
+        if (update.pending_photo_url) updateData.profile_photo_url = update.pending_photo_url;
+        if (update.pending_video_url) updateData.profile_video_url = update.pending_video_url;
+
+        await supabase
+          .from('users')
+          .update(updateData)
+          .eq('email', update.user_email);
+      }
+    }
+
+    // Update the pending update status
+    await supabase
+      .from('pending_media_updates')
+      .update({
+        status,
+        admin_message: adminMessage,
+        reviewed_at: new Date().toISOString()
+      })
+      .eq('id', updateId);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error reviewing media update:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Admin premium subscription endpoints
+app.get('/api/admin/premium-subscriptions', async (req, res) => {
+  try {
+    const { status = 'pending' } = req.query;
+
+    const { data, error } = await supabase
+      .from('pending_premium_subscriptions')
+      .select('*')
+      .eq('status', status)
+      .order('requested_at', { ascending: false });
+
+    if (error) throw error;
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching premium subscriptions:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/api/admin/premium-subscriptions/review', async (req, res) => {
+  try {
+    const { subscriptionId, status, adminMessage } = req.body;
+
+    if (status === 'approved') {
+      // Get the pending subscription
+      const { data: subscription } = await supabase
+        .from('pending_premium_subscriptions')
+        .select('*')
+        .eq('id', subscriptionId)
+        .single();
+
+      if (subscription) {
+        // Update user's subscription status
+        await supabase
+          .from('users')
+          .update({ subscription: 'premium' })
+          .eq('email', subscription.user_email);
+      }
+    }
+
+    // Update the pending subscription status
+    await supabase
+      .from('pending_premium_subscriptions')
+      .update({
+        status,
+        admin_message: adminMessage,
+        reviewed_at: new Date().toISOString()
+      })
+      .eq('id', subscriptionId);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error reviewing subscription:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 // Serve the profile page (frontend)
 app.use(express.static('frontend'));  // Serve static files (HTML, CSS, JS)
