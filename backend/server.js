@@ -557,6 +557,71 @@ app.post('/api/users/interact', async (req, res) => {
   }
 });
 
+// ✅ API route to update found match status
+app.post('/api/users/found-match-status', async (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  
+  if (!token) {
+    return res.status(401).json({ success: false, message: "Missing token" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const { targetUserId, foundMatch } = req.body;
+
+    const { error } = await supabase
+      .from('users')
+      .update({ found_match: foundMatch })
+      .eq('id', targetUserId);
+
+    if (error) {
+      throw new Error('Error updating found match status');
+    }
+
+    res.json({ success: true, message: 'Found match status updated successfully' });
+  } catch (error) {
+    console.error("Error updating found match status:", error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ✅ API route to handle match status (both users found match)
+app.post('/api/users/match-status', async (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  
+  if (!token) {
+    return res.status(401).json({ success: false, message: "Missing token" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const currentUserEmail = decoded.email;
+    const { targetUserId } = req.body;
+
+    const currentUserId = await getUserIdByEmail(currentUserEmail);
+
+    // Update both users as found_match
+    const { error: currentUserError } = await supabase
+      .from('users')
+      .update({ found_match: true, matched_with: targetUserId })
+      .eq('id', currentUserId);
+
+    const { error: targetUserError } = await supabase
+      .from('users')
+      .update({ found_match: true, matched_with: currentUserId })
+      .eq('id', targetUserId);
+
+    if (currentUserError || targetUserError) {
+      throw new Error('Error updating match status');
+    }
+
+    res.json({ success: true, message: 'Match status updated successfully' });
+  } catch (error) {
+    console.error("Error updating match status:", error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // ✅ API route to update interaction when a user selects another user
 app.post('/api/users/select/:email', async (req, res) => {
   const currentUserEmail = req.params.email;

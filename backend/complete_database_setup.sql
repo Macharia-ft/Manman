@@ -20,6 +20,11 @@ BEGIN
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'found_match') THEN
             ALTER TABLE users ADD COLUMN found_match BOOLEAN DEFAULT FALSE;
         END IF;
+
+        -- Add matched_with column if it doesn't exist
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'matched_with') THEN
+            ALTER TABLE users ADD COLUMN matched_with INTEGER DEFAULT NULL;
+        END IF;
     END IF;
 END $$;
 

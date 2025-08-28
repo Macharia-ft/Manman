@@ -58,185 +58,106 @@ document.addEventListener('DOMContentLoaded', async () => {
     `;
   }
 
-  // Match Statistics Chart
-  function renderMatchChart() {
-    const matchChartData = {
-      labels: ['Matches', 'Selected', 'Rejected'],
-      datasets: [{
-        data: [12, 8, 15],
-        backgroundColor: ['#ff6b6b', '#4ecdc4', '#45b7d1'],
-        borderColor: '#fff',
-        borderWidth: 2
-      }]
-    };
-    const matchChartOptions = { type: 'pie', backgroundColor: ['#ff6b6b', '#4ecdc4', '#45b7d1'] };
-    createChart('matchChart', matchChartData, matchChartOptions);
+  // Check authentication
+  const token = localStorage.getItem("token");
+  if (!token) {
+    window.location.href = "login.html";
   }
 
-  // Activity Chart
-  function renderActivityChart() {
-    const activityChartData = {
-      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+  // Chart configuration
+  const chartConfig = {
+    type: 'doughnut',
+    data: {
+      labels: ['All Profiles', 'Selected', 'Selected You', 'Accepted', 'Removed'],
       datasets: [{
-        label: 'Daily Activity',
-        data: [5, 8, 12, 15, 10, 20, 18],
-        borderColor: '#ff6b6b',
-        backgroundColor: 'rgba(255, 107, 107, 0.1)',
-        borderWidth: 3,
-        fill: true,
-        tension: 0.4
+        data: [0, 0, 0, 0, 0],
+        backgroundColor: [
+          '#FF6384',
+          '#36A2EB',
+          '#FFCE56',
+          '#4BC0C0',
+          '#9966FF'
+        ],
+        borderWidth: 2,
+        borderColor: '#fff'
       }]
-    };
-    const activityChartOptions = { type: 'line', borderColor: '#ff6b6b', backgroundColor: 'rgba(255, 107, 107, 0.1)' };
-    createChart('activityChart', activityChartData, activityChartOptions);
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            padding: 20,
+            usePointStyle: true
+          }
+        },
+        title: {
+          display: true,
+          text: 'Profile Distribution',
+          font: {
+            size: 18,
+            weight: 'bold'
+          }
+        }
+      }
+    }
+  };
+
+  // Initialize chart when page loads
+  document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('profileChart');
+    if (ctx) {
+      const chart = new Chart(ctx, chartConfig);
+      loadChartData(chart);
+    }
+  });
+
+  async function loadChartData(chart) {
+    try {
+      const currentUser = getCurrentUserFromToken();
+      if (!currentUser) {
+        throw new Error('No user found');
+      }
+
+      // Fetch profile data from API
+      const response = await fetch(`${config.API_BASE_URL}/api/users/profile-stats/${currentUser.email}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        chart.data.datasets[0].data = [
+          data.allProfiles || 0,
+          data.selected || 0,
+          data.selectedYou || 0,
+          data.accepted || 0,
+          data.removed || 0
+        ];
+        chart.update();
+      }
+    } catch (error) {
+      console.error('Error loading chart data:', error);
+    }
   }
 
-  renderMatchChart();
-  renderActivityChart();
+  function getCurrentUserFromToken() {
+    const token = localStorage.getItem("token");
+    if (!token) return null;
+
+    try {
+      const parts = token.split(".");
+      if (parts.length !== 3) return null;
+      return JSON.parse(atob(parts[1]));
+    } catch (e) {
+      console.error("Error decoding token:", e);
+      return null;
+    }
+  }
 
   loadConversations(); // Call the original function to load conversations
 });
-
-// Charts.js - Simple chart functionality without ES6 classes
-
-function createChart(canvasId, data, options) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) {
-    console.error('Canvas element not found:', canvasId);
-    return null;
-  }
-
-  const ctx = canvas.getContext('2d');
-
-  // Simple bar chart implementation
-  if (options.type === 'bar') {
-    return drawBarChart(ctx, canvas, data, options);
-  } else if (options.type === 'line') {
-    return drawLineChart(ctx, canvas, data, options);
-  } else if (options.type === 'pie') {
-    return drawPieChart(ctx, canvas, data, options);
-  }
-
-  return null;
-}
-
-function drawBarChart(ctx, canvas, data, options) {
-  const width = canvas.width;
-  const height = canvas.height;
-  const padding = 40;
-
-  // Clear canvas
-  ctx.clearRect(0, 0, width, height);
-
-  if (!data.datasets || !data.datasets[0] || !data.datasets[0].data) {
-    return;
-  }
-
-  const values = data.datasets[0].data;
-  const labels = data.labels || [];
-  const maxValue = Math.max(...values);
-  const barWidth = (width - padding * 2) / values.length;
-
-  // Draw bars
-  ctx.fillStyle = options.backgroundColor || '#3498db';
-  values.forEach((value, index) => {
-    const barHeight = (value / maxValue) * (height - padding * 2);
-    const x = padding + index * barWidth;
-    const y = height - padding - barHeight;
-
-    ctx.fillRect(x, y, barWidth - 10, barHeight);
-
-    // Draw labels
-    if (labels[index]) {
-      ctx.fillStyle = '#333';
-      ctx.font = '12px Arial';
-      ctx.fillText(labels[index], x, height - 10);
-      ctx.fillStyle = options.backgroundColor || '#3498db';
-    }
-  });
-
-  return { update: function() { drawBarChart(ctx, canvas, data, options); } };
-}
-
-function drawLineChart(ctx, canvas, data, options) {
-  const width = canvas.width;
-  const height = canvas.height;
-  const padding = 40;
-
-  ctx.clearRect(0, 0, width, height);
-
-  if (!data.datasets || !data.datasets[0] || !data.datasets[0].data) {
-    return;
-  }
-
-  const values = data.datasets[0].data;
-  const maxValue = Math.max(...values);
-  const pointWidth = (width - padding * 2) / (values.length - 1);
-
-  ctx.strokeStyle = options.borderColor || '#3498db';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-
-  values.forEach((value, index) => {
-    const x = padding + index * pointWidth;
-    const y = height - padding - (value / maxValue) * (height - padding * 2);
-
-    if (index === 0) {
-      ctx.moveTo(x, y);
-    } else {
-      ctx.lineTo(x, y);
-    }
-
-    // Draw points
-    ctx.fillStyle = options.backgroundColor || '#3498db';
-    ctx.beginPath();
-    ctx.arc(x, y, 3, 0, 2 * Math.PI);
-    ctx.fill();
-    ctx.beginPath();
-  });
-
-  ctx.stroke();
-
-  return { update: function() { drawLineChart(ctx, canvas, data, options); } };
-}
-
-function drawPieChart(ctx, canvas, data, options) {
-  const width = canvas.width;
-  const height = canvas.height;
-  const centerX = width / 2;
-  const centerY = height / 2;
-  const radius = Math.min(width, height) / 3;
-
-  ctx.clearRect(0, 0, width, height);
-
-  if (!data.datasets || !data.datasets[0] || !data.datasets[0].data) {
-    return;
-  }
-
-  const values = data.datasets[0].data;
-  const total = values.reduce((sum, value) => sum + value, 0);
-  const colors = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6'];
-
-  let currentAngle = 0;
-
-  values.forEach((value, index) => {
-    const sliceAngle = (value / total) * 2 * Math.PI;
-
-    ctx.fillStyle = colors[index % colors.length];
-    ctx.beginPath();
-    ctx.moveTo(centerX, centerY);
-    ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
-    ctx.closePath();
-    ctx.fill();
-
-    currentAngle += sliceAngle;
-  });
-
-  return { update: function() { drawPieChart(ctx, canvas, data, options); } };
-}
-
-// Export for use in other files
-window.createChart = createChart;
 
 
 async function checkUserSubscription() {
@@ -259,7 +180,7 @@ async function checkUserSubscription() {
   return 'free'; // Default to free if unable to check
 }
 
-async function loadConversations() {
+function loadConversations() {
   try {
     const token = localStorage.getItem("token");
     const response = await fetch(`${config.API_BASE_URL}/api/user/conversations`, {
