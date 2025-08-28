@@ -1,3 +1,4 @@
+
 // JWT decode functionality
 function decodeJWT(token) {
   try {
@@ -36,9 +37,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (loadingSpinner) loadingSpinner.style.display = 'none';
     return;
   }
-
-  // Make local storage user-specific to prevent conflicts when multiple users use same device
-  const userStorageKey = (key) => `${key}_${currentUserEmail}`;
 
   let allProfiles = [];
   let selectedProfiles = [];
@@ -135,8 +133,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     if (selectedYouResponse.ok) {
-      selectedYouProfiles = await selectedYouResponse.json();
-      selectedYouProfiles = selectedYouProfiles.map(u => ({...u, originalLocation: 'selected-you'}));
+      let rawSelectedYouProfiles = await selectedYouResponse.json();
+      
+      // Remove profiles that are already in accepted section
+      const acceptedUserIds = acceptedProfiles.map(u => u.id);
+      selectedYouProfiles = rawSelectedYouProfiles
+        .filter(profile => !acceptedUserIds.includes(profile.id))
+        .map(u => ({...u, originalLocation: 'selected-you'}));
     } else {
       console.error("Error fetching selected-you profiles.");
     }
@@ -199,7 +202,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const videoUrl = user.profile_video_url && user.profile_video_url.trim() !== '' ? user.profile_video_url : null;
       const countryOfBirth = user.country_of_birth || 'Unknown';
       const matchScore = user.matchScore || '0%';
-      const foundMatch = user.found_match; // This seems to be a new flag for indicating a match
+      const foundMatch = user.found_match;
 
       const userCard = document.createElement("div");
       userCard.classList.add("profile-card");
@@ -240,7 +243,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const selectButton = actions.querySelector(".select-btn");
         if (selectButton && !foundMatch) {
           selectButton.addEventListener("click", async (event) => {
-            // Prevent double-clicking
             if (selectButton.disabled) return;
             selectButton.disabled = true;
             selectButton.textContent = 'Processing...';
@@ -290,13 +292,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const acceptButton = actions.querySelector(".select-btn");
         if (acceptButton) {
           acceptButton.addEventListener("click", async (event) => {
-            // Prevent double-clicking
             if (acceptButton.disabled) return;
             acceptButton.disabled = true;
             acceptButton.textContent = 'Processing...';
             
             try {
-              // When accepting, create mutual match
               await createMutualMatch(user, 'selected-you', 'accepted', 'accepted');
             } finally {
               acceptButton.disabled = false;
@@ -313,8 +313,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
       } else if (activeSection === "accepted") {
-        // New requirement: "Matched" button for Accepted section, redirect to chat page if premium
-        // "Cancel Match" button remains.
         actions.innerHTML = `
           <button class="match-btn">Matched</button>
           <button class="remove-btn">Cancel Match</button>
@@ -323,7 +321,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const matchedButton = actions.querySelector(".match-btn");
         if (matchedButton) {
           matchedButton.addEventListener("click", async (event) => {
-            // Prevent double-clicking
             if (matchedButton.disabled) return;
             matchedButton.disabled = true;
             matchedButton.textContent = 'Loading...';
@@ -333,8 +330,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               if (subscription === 'free') {
                 showPremiumNotification();
               } else {
-                // Redirect to chat page with the matched user
-                window.location.href = `chat.html?userId=${user.id}`;
+                window.location.href = `chat.html?user=${user.id}&name=${encodeURIComponent(user.full_name)}`;
               }
             } finally {
               matchedButton.disabled = false;
@@ -361,7 +357,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }
 
-      // Add event listener to profile photo to show floating profile photo
       const profilePic = userCard.querySelector(`#profilePic-${user.id}`);
       if (profilePic) {
         profilePic.addEventListener('click', () => {
@@ -375,7 +370,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   async function createMutualMatch(user, fromSection, toSection, action) {
     try {
-      // Create mutual match - both users go to accepted
       const response = await fetch(`${config.API_BASE_URL}/api/users/mutual-match`, {
         method: "POST",
         headers: {
@@ -433,7 +427,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (fromSection === 'accepted') acceptedProfiles = acceptedProfiles.filter(u => u.id !== user.id);
       if (fromSection === 'removed') removedProfiles = removedProfiles.filter(u => u.id !== user.id);
 
-      // Ensure user object has originalLocation for correct placement after restoration
       const userToMove = { ...user, originalLocation: user.originalLocation || fromSection };
 
       if (toSection === 'all') allProfiles.push(userToMove);
@@ -446,7 +439,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     } catch (error) {
       console.log('Error moving profile:', error);
-      // Don't show error notification to avoid spam
     }
   }
 
@@ -583,20 +575,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = 'charts.html';
       } catch (error) {
         console.error('Error checking subscription:', error);
-        // If there's an error, still try to redirect, assuming premium or allowing access
         window.location.href = 'charts.html';
       }
     };
 
-    // Add event listener for the resize event
-    // Note: The original code had a resize listener. This part of the change is just adding a new function.
-    // If there was a resize listener to be modified, it would be handled differently.
-    // Since the provided change snippet doesn't modify an existing resize listener but adds a new function,
-    // we ensure that the new function is correctly placed.
-    // Assuming the original code might have had a resize listener, we'll keep it.
-    // If not, this is an addition.
-    const mainContent = document.querySelector('.main-content'); // Example selector, adjust if needed
-    const sidebar = document.querySelector('.sidebar'); // Example selector, adjust if needed
+    const mainContent = document.querySelector('.main-content');
+    const sidebar = document.querySelector('.sidebar');
 
     if (mainContent && sidebar) {
       window.addEventListener('resize', () => {

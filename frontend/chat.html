@@ -1,162 +1,389 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chat - Takeyours</title>
-  <link rel="stylesheet" href="dashboard_style.css">
+  <link rel="stylesheet" href="styleguide.css">
+  <link rel="stylesheet" href="globals.css">
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
     .chat-container {
-      max-width: 1200px;
+      max-width: 1000px;
       margin: 0 auto;
-      padding: 20px;
-    }
-
-    .premium-notice {
-      background: #fff3cd;
-      border: 1px solid #ffeaa7;
-      padding: 20px;
-      border-radius: 10px;
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .conversations-list {
-      display: grid;
-      gap: 15px;
-    }
-
-    .conversation-item {
       background: white;
-      border-radius: 10px;
-      padding: 15px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      display: flex;
-      align-items: center;
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-
-    .conversation-item:hover {
-      transform: translateY(-2px);
-    }
-
-    .conversation-photo {
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      object-fit: cover;
-      margin-right: 15px;
-      cursor: pointer;
-    }
-
-    .conversation-info {
-      flex: 1;
-    }
-
-    .conversation-name {
-      font-weight: bold;
-      margin-bottom: 5px;
-    }
-
-    .conversation-preview {
-      color: #666;
-      font-size: 0.9em;
-      white-space: nowrap;
+      border-radius: 20px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.15);
       overflow: hidden;
-      text-overflow: ellipsis;
+      height: 85vh;
+      display: flex;
+      flex-direction: column;
     }
 
-    .conversation-status {
+    .chat-header {
+      background: linear-gradient(135deg, #ff6b35, #f7931e);
+      color: white;
+      padding: 25px 30px;
       display: flex;
       align-items: center;
-      gap: 10px;
-    }
-
-    .status-indicator {
-      width: 10px;
-      height: 10px;
-      background: #28a745;
-      border-radius: 50%;
+      justify-content: space-between;
+      box-shadow: 0 5px 20px rgba(255, 107, 53, 0.3);
     }
 
     .back-btn {
-      background: #6c757d;
+      background: rgba(255,255,255,0.2);
       color: white;
-      padding: 10px 20px;
+      padding: 12px 20px;
       border: none;
-      border-radius: 5px;
+      border-radius: 25px;
       cursor: pointer;
       text-decoration: none;
-      margin-bottom: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+
+    .back-btn:hover {
+      background: rgba(255,255,255,0.3);
+      transform: translateX(-5px);
+    }
+
+    .chat-user-info {
+      display: flex;
+      align-items: center;
+      flex: 1;
+      justify-content: center;
+    }
+
+    .chat-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      margin-right: 15px;
+      object-fit: cover;
+      border: 3px solid rgba(255,255,255,0.3);
+      cursor: pointer;
+    }
+
+    .chat-user-name {
+      font-size: 24px;
+      font-weight: 700;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .chat-status {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+      background: linear-gradient(to bottom, #f8f9fa, #ffffff);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .message {
+      display: flex;
+      margin-bottom: 15px;
+    }
+
+    .message.sent {
+      justify-content: flex-end;
+    }
+
+    .message.received {
+      justify-content: flex-start;
+    }
+
+    .message-bubble {
+      max-width: 70%;
+      padding: 15px 20px;
+      border-radius: 20px;
+      font-size: 16px;
+      line-height: 1.4;
+      position: relative;
+      word-wrap: break-word;
+    }
+
+    .message.sent .message-bubble {
+      background: linear-gradient(135deg, #007BFF, #0056b3);
+      color: white;
+      border-bottom-right-radius: 5px;
+    }
+
+    .message.received .message-bubble {
+      background: #e9ecef;
+      color: #333;
+      border-bottom-left-radius: 5px;
+    }
+
+    .message-time {
+      font-size: 12px;
+      opacity: 0.7;
+      margin-top: 5px;
+    }
+
+    .no-messages {
+      text-align: center;
+      color: #6c757d;
+      font-size: 18px;
+      margin-top: 50px;
+    }
+
+    .chat-input-container {
+      padding: 25px 30px;
+      background: white;
+      border-top: 2px solid #e9ecef;
+      display: flex;
+      gap: 15px;
+      align-items: center;
+    }
+
+    .chat-input {
+      flex: 1;
+      padding: 15px 20px;
+      border: 2px solid #e9ecef;
+      border-radius: 25px;
+      font-size: 16px;
+      outline: none;
+      transition: all 0.3s ease;
+      resize: none;
+      min-height: 20px;
+      max-height: 100px;
+    }
+
+    .chat-input:focus {
+      border-color: #007BFF;
+      box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+    }
+
+    .send-btn {
+      background: linear-gradient(135deg, #007BFF, #0056b3);
+      color: white;
+      border: none;
+      padding: 15px 25px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 20px;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 50px;
+      height: 50px;
+    }
+
+    .send-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 8px 25px rgba(0, 123, 255, 0.3);
+    }
+
+    .send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .premium-notice {
+      background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+      border: 2px solid #ffeaa7;
+      padding: 30px;
+      border-radius: 15px;
+      text-align: center;
+      margin: 30px;
+      box-shadow: 0 10px 30px rgba(255, 193, 7, 0.2);
+    }
+
+    .premium-notice h3 {
+      color: #856404;
+      margin-bottom: 15px;
+      font-size: 24px;
+    }
+
+    .premium-notice p {
+      color: #856404;
+      margin-bottom: 25px;
+      font-size: 16px;
+    }
+
+    .upgrade-btn {
+      background: linear-gradient(135deg, #007BFF, #0056b3);
+      color: white;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
       display: inline-block;
+      transition: all 0.3s ease;
+    }
+
+    .upgrade-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 123, 255, 0.3);
+    }
+
+    /* Floating Profile Photo */
+    .floating-profile-photo {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.9);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      backdrop-filter: blur(8px);
+    }
+
+    .floating-profile-content {
+      position: relative;
+      max-width: 90%;
+      max-height: 90%;
+      animation: fadeInScale 0.4s ease;
+    }
+
+    @keyframes fadeInScale {
+      from {
+        opacity: 0;
+        transform: scale(0.7);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .floating-profile-content img {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 20px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.4);
+    }
+
+    .close-btn {
+      position: absolute;
+      top: -60px;
+      right: 0;
+      background: white;
+      border: none;
+      padding: 15px 20px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 20px;
+      font-weight: bold;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+
+    .close-btn:hover {
+      background: #f8f9fa;
+      transform: scale(1.15);
+    }
+
+    @media (max-width: 768px) {
+      .chat-container {
+        margin: 10px;
+        border-radius: 15px;
+        height: 90vh;
+      }
+
+      .chat-header {
+        padding: 20px;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .back-btn {
+        align-self: flex-start;
+      }
+
+      .chat-user-info {
+        justify-content: center;
+      }
+
+      .chat-messages {
+        padding: 20px;
+      }
+
+      .message-bubble {
+        max-width: 85%;
+      }
+
+      .chat-input-container {
+        padding: 20px;
+      }
     }
   </style>
 </head>
 <body>
   <div class="chat-container">
-    <a href="dashboard_page.html" class="back-btn">← Back to Dashboard</a>
-
-    <h2>Your Conversations</h2>
+    <div class="chat-header">
+      <a href="charts.html" class="back-btn">← Back to Messages</a>
+      <div class="chat-user-info">
+        <img id="chatAvatar" src="https://via.placeholder.com/50" alt="User" class="chat-avatar">
+        <div>
+          <div id="chatUserName" class="chat-user-name">Loading...</div>
+          <div class="chat-status">Online</div>
+        </div>
+      </div>
+      <div></div>
+    </div>
 
     <div id="premiumNotice" class="premium-notice" style="display: none;">
-      <h3>🚀 Premium Feature Required</h3>
-      <p>Upgrade to Premium to start chatting with your matches!</p>
-      <button onclick="window.location.href='subscriptions.html'" style="background: #007BFF; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
-        Upgrade to Premium
-      </button>
+      <h3>🚀 Premium Feature</h3>
+      <p>Messaging is available for Premium users only!</p>
+      <a href="subscriptions.html" class="upgrade-btn">Upgrade to Premium</a>
     </div>
 
-    <div id="noChats" style="display: none; text-align: center; color: #666; padding: 40px;">
-      <h3>No conversations yet</h3>
-      <p>Start matching with people to begin conversations!</p>
+    <div id="chatMessages" class="chat-messages">
+      <div class="no-messages">
+        Start your conversation here...
+      </div>
     </div>
 
-    <div id="conversationsList" class="conversations-list">
-      <!-- Conversations will be loaded here -->
+    <div id="chatInputContainer" class="chat-input-container">
+      <textarea 
+        id="messageInput" 
+        class="chat-input" 
+        placeholder="Type your message..." 
+        rows="1"></textarea>
+      <button id="sendBtn" class="send-btn">➤</button>
     </div>
   </div>
 
-  <!-- Floating Profile Photo Modal -->
-  <div id="floatingProfilePhoto" class="floating-profile-photo" style="display: none;">
-    <button id="closeProfileBtn" class="close-btn">X</button>
-    <img id="floatingProfilePic" src="" alt="Profile" class="profile-pic">
-    <button id="viewProfileBtn">View Profile</button>
+  <!-- Floating Profile Photo -->
+  <div id="floatingProfilePhoto" class="floating-profile-photo">
+    <div class="floating-profile-content">
+      <button id="closeProfileBtn" class="close-btn">✕</button>
+      <img id="floatingProfilePic" src="" alt="Profile">
+    </div>
   </div>
 
   <script src="config.js"></script>
   <script src="chat.js"></script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat</title>
-    <link rel="stylesheet" href="chat.css">
-</head>
-<body>
-    <div class="chat-container">
-        <header class="chat-header">
-            <button class="back-btn" onclick="window.history.back()">← Back</button>
-            <div class="chat-user-info">
-                <img id="chatUserPhoto" src="https://via.placeholder.com/40" alt="User" class="chat-user-photo">
-                <h3 id="chatUserName">Loading...</h3>
-            </div>
-        </header>
-
-        <div class="messages-container" id="messagesContainer">
-            <!-- Messages will be loaded here -->
-        </div>
-
-        <div class="message-input-container">
-            <input type="text" id="messageInput" placeholder="Type a message..." maxlength="500">
-            <button id="sendButton">Send</button>
-        </div>
-    </div>
-
-    <script src="config.js"></script>
-    <script src="chat.js"></script>
 </body>
 </html>

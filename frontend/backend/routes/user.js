@@ -1,3 +1,7 @@
+
+const express = require('express');
+const router = express.Router();
+
 // Add conversations endpoint
 router.get("/conversations", async (req, res) => {
   try {
@@ -31,7 +35,7 @@ router.get("/conversations", async (req, res) => {
     const { data: acceptedInteractions, error: acceptedError } = await supabase
       .from('user_interactions')
       .select('target_user_id')
-      .eq('user_id', currentUser.id)
+      .eq('current_user_id', currentUser.id)
       .eq('action', 'accepted');
 
     if (acceptedError || !acceptedInteractions || acceptedInteractions.length === 0) {
@@ -68,5 +72,5 @@ router.get("/conversations", async (req, res) => {
     res.json([]);
   }
 });
-</new_str>
-</changes>
+
+module.exports = router;

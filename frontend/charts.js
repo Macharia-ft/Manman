@@ -1,3 +1,4 @@
+
 document.addEventListener('DOMContentLoaded', async () => {
   // Check if user has premium subscription
   const token = localStorage.getItem("token");
@@ -15,33 +16,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       const data = await response.json();
       if (data.subscription === 'free') {
         // Redirect free users immediately without showing content
-        showPremiumNotification();
+        window.location.href = 'dashboard_page.html';
         return;
       }
     }
   } catch (error) {
     console.error('Error checking subscription:', error);
-    showPremiumNotification();
+    window.location.href = 'dashboard_page.html';
     return;
-  }
-
-  function showPremiumNotification() {
-    document.body.innerHTML = `
-      <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-        <div style="background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; max-width: 500px;">
-          <h2 style="color: #ff6b35; margin-bottom: 20px;">🚀 Premium Feature</h2>
-          <p style="margin-bottom: 30px; font-size: 18px;">Charts and messaging are available for Premium users only!</p>
-          <div style="display: flex; gap: 15px; justify-content: center;">
-            <button onclick="window.location.href='subscriptions.html'" style="background: #007BFF; color: white; padding: 15px 30px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">
-              Upgrade to Premium
-            </button>
-            <button onclick="window.location.href='dashboard_page.html'" style="background: #6c757d; color: white; padding: 15px 30px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">
-              Back to Dashboard
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
   }
 
   // Load conversations for premium users
@@ -118,7 +100,7 @@ function displayConversations(conversations) {
     chatItem.onclick = () => openChat(conv.user_id, conv.user_name);
 
     chatItem.innerHTML = `
-      <img src="${conv.profile_photo_url || 'https://via.placeholder.com/60'}"
+      <img src="${conv.profile_photo_url || 'https://via.placeholder.com/80'}"
            alt="${conv.user_name}"
            class="chat-avatar"
            onclick="event.stopPropagation(); showProfilePhoto('${conv.profile_photo_url}', '${conv.user_name}')">

@@ -732,24 +732,38 @@ app.post("/api/users/mutual-match", async (req, res) => {
     const currentUserId = await getUserIdByEmail(currentUserEmail);
 
     // Create interaction for current user accepting the other user
-    await supabase
+    const { error: currentUserError } = await supabase
       .from('user_interactions')
       .upsert({
         current_user_id: currentUserId,
         target_user_id: targetUserId,
         action: 'accepted',
-        original_location: originalLocation || 'selected-you'
+        original_location: originalLocation || 'selected-you',
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'current_user_id,target_user_id'
       });
 
+    if (currentUserError) {
+      console.error("Error creating current user interaction:", currentUserError);
+    }
+
     // Create reverse interaction - other user also goes to accepted for current user
-    await supabase
+    const { error: reverseUserError } = await supabase
       .from('user_interactions')
       .upsert({
         current_user_id: targetUserId,
         target_user_id: currentUserId,
         action: 'accepted',
-        original_location: 'selected'
+        original_location: 'selected',
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'current_user_id,target_user_id'
       });
+
+    if (reverseUserError) {
+      console.error("Error creating reverse user interaction:", reverseUserError);
+    }
 
     res.json({ success: true, message: "Mutual match created successfully" });
   } catch (error) {
