@@ -251,12 +251,17 @@ document.addEventListener('DOMContentLoaded', async () => {
           <button class="select-btn">Accept</button>
           <button class="remove-btn">Reject</button>
         `;
-        actions.querySelector(".select-btn").addEventListener("click", () => {
-          acceptedProfiles.push(user);
-          selectedYouProfiles = selectedYouProfiles.filter(u => u.id !== user.id);
-          updateLocalStorage();
-          sendMatchRequest(user);
-          renderProfiles();
+        actions.querySelector(".select-btn").addEventListener("click", async () => {
+          const subscription = await checkUserSubscription();
+          if (subscription === 'free') {
+            showPremiumNotification();
+          } else {
+            acceptedProfiles.push(user);
+            selectedYouProfiles = selectedYouProfiles.filter(u => u.id !== user.id);
+            updateLocalStorage();
+            sendMatchRequest(user);
+            renderProfiles();
+          }
         });
         actions.querySelector(".remove-btn").addEventListener("click", () => {
           removedProfiles.push(user);
@@ -269,8 +274,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           <button class="select-btn">Matched</button>
           <button class="remove-btn">Cancel Match</button>
         `;
-        actions.querySelector(".select-btn").addEventListener("click", () => {
-          window.location.href = "charts.html";
+        actions.querySelector(".select-btn").addEventListener("click", async () => {
+          const subscription = await checkUserSubscription();
+          if (subscription === 'free') {
+            showPremiumNotification();
+          } else {
+            window.location.href = `chat.html?userId=${user.id}`;
+          }
         });
         actions.querySelector(".remove-btn").addEventListener("click", () => {
           allProfiles.push(user);
@@ -325,12 +335,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (action === 'edit') {
       viewProfileBtn.textContent = 'Edit Profile';
       viewProfileBtn.onclick = () => {
-        window.location.href = "edit-profile.html"; // Redirect to dedicated edit profile page
+        floatingProfilePhoto.style.display = 'none';
+        document.body.style.overflow = '';
+        window.location.href = "edit-profile.html";
       };
     } else {
       viewProfileBtn.textContent = 'View Profile';
       viewProfileBtn.onclick = () => {
-        window.location.href = `profile.html?id=${user.id}`; // Redirect to the profile page with user ID in URL
+        floatingProfilePhoto.style.display = 'none';
+        document.body.style.overflow = '';
+        window.location.href = `profile.html?id=${user.id}`;
       };
     }
   }
@@ -371,5 +385,61 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!response.ok) {
       console.error("Error sending match request:", response.status);
     }
+  }
+
+  async function checkUserSubscription() {
+    try {
+      const response = await fetch(`${config.API_BASE_URL}/api/user/subscription-status`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.subscription || 'free';
+      }
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+    }
+    return 'free';
+  }
+
+  function showPremiumNotification() {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      z-index: 10000;
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+    `;
+    
+    notification.innerHTML = `
+      <h3 style="color: #ff6b35; margin-bottom: 15px;">🚀 Premium Feature</h3>
+      <p style="margin-bottom: 20px;">You need to upgrade to Premium to access this feature!</p>
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button onclick="window.location.href='subscriptions.html'" style="background: #007BFF; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
+          Upgrade to Premium
+        </button>
+        <button onclick="this.parentElement.parentElement.remove()" style="background: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
+          Cancel
+        </button>
+      </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 10 seconds
+    setTimeout(() => {
+      if (notification.parentElement) {
+        notification.remove();
+      }
+    }, 10000);
   }
 });

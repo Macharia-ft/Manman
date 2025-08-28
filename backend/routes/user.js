@@ -30,11 +30,31 @@ router.post("/personal", personalUpload.fields([
 ]), savePersonalInfo);
 router.post("/preferences", savePreferences);
 router.get("/current-preferences", getCurrentPreferences);
-router.post("/update-preferences", updatePreferences);
+router.put("/update-preferences", updatePreferences);
 router.get("/profile-photo/:email", getUserProfilePhoto);
 router.post("/update-media", personalUpload.fields([
   { name: 'profilePhoto', maxCount: 1 },
   { name: 'profileVideo', maxCount: 1 }
 ]), require("../controllers/userController").updateMedia);
+
+// Add subscription status endpoint
+router.get("/subscription-status", async (req, res) => {
+  try {
+    // For now, return free for all users - you can implement subscription logic later
+    res.json({ subscription: 'free' });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Add conversations endpoint
+router.get("/conversations", async (req, res) => {
+  try {
+    // Return empty array for now - implement when you have the conversations table
+    res.json([]);
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 module.exports = router;

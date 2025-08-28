@@ -1,213 +1,127 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chat - Takeyours</title>
-  <link rel="stylesheet" href="styleguide.css">
-  <link rel="stylesheet" href="globals.css">
+  <link rel="stylesheet" href="dashboard_style.css">
   <style>
     .chat-container {
-      max-width: 800px;
+      max-width: 1200px;
       margin: 0 auto;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      background: white;
+      padding: 20px;
     }
 
-    .chat-header {
+    .premium-notice {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .conversations-list {
+      display: grid;
+      gap: 15px;
+    }
+
+    .conversation-item {
+      background: white;
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
       display: flex;
       align-items: center;
-      padding: 15px 20px;
-      background: #007BFF;
-      color: white;
-      border-bottom: 1px solid #ddd;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .conversation-item:hover {
+      transform: translateY(-2px);
+    }
+
+    .conversation-photo {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-right: 15px;
+      cursor: pointer;
+    }
+
+    .conversation-info {
+      flex: 1;
+    }
+
+    .conversation-name {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .conversation-preview {
+      color: #666;
+      font-size: 0.9em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .conversation-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-indicator {
+      width: 10px;
+      height: 10px;
+      background: #28a745;
+      border-radius: 50%;
     }
 
     .back-btn {
-      background: none;
-      border: none;
+      background: #6c757d;
       color: white;
-      font-size: 18px;
-      margin-right: 15px;
-      cursor: pointer;
-    }
-
-    .chat-user-info {
-      display: flex;
-      align-items: center;
-      flex: 1;
-    }
-
-    .chat-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      margin-right: 15px;
-      object-fit: cover;
-      cursor: pointer;
-    }
-
-    .chat-username {
-      font-weight: bold;
-    }
-
-    .chat-messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px;
-      background: #f8f9fa;
-    }
-
-    .message {
-      margin-bottom: 15px;
-      display: flex;
-    }
-
-    .message.own {
-      justify-content: flex-end;
-    }
-
-    .message-content {
-      max-width: 70%;
-      padding: 10px 15px;
-      border-radius: 20px;
-      background: white;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-
-    .message.own .message-content {
-      background: #007BFF;
-      color: white;
-    }
-
-    .message-time {
-      font-size: 0.8em;
-      color: #666;
-      margin-top: 5px;
-    }
-
-    .message.own .message-time {
-      color: rgba(255,255,255,0.8);
-    }
-
-    .chat-input {
-      display: flex;
-      padding: 15px 20px;
-      background: white;
-      border-top: 1px solid #ddd;
-    }
-
-    .message-input {
-      flex: 1;
-      padding: 10px 15px;
-      border: 1px solid #ddd;
-      border-radius: 25px;
-      outline: none;
-      margin-right: 10px;
-    }
-
-    .send-btn {
-      background: #007BFF;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 45px;
-      height: 45px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .send-btn:hover {
-      background: #0056b3;
-    }
-
-    .send-btn:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
-
-    .typing-indicator {
       padding: 10px 20px;
-      font-style: italic;
-      color: #666;
-      display: none;
-    }
-
-    .floating-profile-photo {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.9);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 10000;
-    }
-
-    .floating-profile-content {
-      position: relative;
-      max-width: 90%;
-      max-height: 90%;
-    }
-
-    .floating-profile-content img {
-      max-width: 100%;
-      max-height: 100%;
-      border-radius: 10px;
-    }
-
-    .close-btn {
-      position: absolute;
-      top: -40px;
-      right: 0;
-      background: white;
       border: none;
-      padding: 10px 15px;
       border-radius: 5px;
       cursor: pointer;
-      font-size: 16px;
+      text-decoration: none;
+      margin-bottom: 20px;
+      display: inline-block;
     }
   </style>
 </head>
 <body>
   <div class="chat-container">
-    <div class="chat-header">
-      <button class="back-btn" onclick="window.location.href='charts.html'">←</button>
-      <div class="chat-user-info">
-        <img id="chatAvatar" src="" alt="User" class="chat-avatar" onclick="showProfilePhoto()">
-        <div class="chat-username" id="chatUsername">Loading...</div>
-      </div>
-    </div>
+    <a href="dashboard_page.html" class="back-btn">← Back to Dashboard</a>
 
-    <div class="chat-messages" id="chatMessages">
-      <!-- Messages will be populated here -->
-    </div>
+    <h2>Your Conversations</h2>
 
-    <div class="typing-indicator" id="typingIndicator">
-      User is typing...
-    </div>
-
-    <div class="chat-input">
-      <input type="text" class="message-input" id="messageInput" placeholder="Type a message..." onkeypress="handleKeyPress(event)">
-      <button class="send-btn" id="sendBtn" onclick="sendMessage()">
-        <span>→</span>
+    <div id="premiumNotice" class="premium-notice" style="display: none;">
+      <h3>🚀 Premium Feature Required</h3>
+      <p>Upgrade to Premium to start chatting with your matches!</p>
+      <button onclick="window.location.href='subscriptions.html'" style="background: #007BFF; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
+        Upgrade to Premium
       </button>
+    </div>
+
+    <div id="noChats" style="display: none; text-align: center; color: #666; padding: 40px;">
+      <h3>No conversations yet</h3>
+      <p>Start matching with people to begin conversations!</p>
+    </div>
+
+    <div id="conversationsList" class="conversations-list">
+      <!-- Conversations will be loaded here -->
     </div>
   </div>
 
-  <!-- Floating Profile Photo -->
-  <div id="floatingProfilePhoto" class="floating-profile-photo">
-    <div class="floating-profile-content">
-      <button id="closeProfileBtn" class="close-btn">✕</button>
-      <img id="floatingProfilePic" src="" alt="Profile">
-    </div>
+  <!-- Floating Profile Photo Modal -->
+  <div id="floatingProfilePhoto" class="floating-profile-photo" style="display: none;">
+    <button id="closeProfileBtn" class="close-btn">X</button>
+    <img id="floatingProfilePic" src="" alt="Profile" class="profile-pic">
+    <button id="viewProfileBtn">View Profile</button>
   </div>
 
   <script src="config.js"></script>

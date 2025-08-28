@@ -1,4 +1,3 @@
-
 let currentUserId = null;
 let currentUserName = null;
 let currentUserPhoto = null;
@@ -7,29 +6,135 @@ let socket = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   const token = localStorage.getItem("token");
-  
+
   if (!token) {
     window.location.href = "login.html";
     return;
   }
 
-  // Get user info from URL parameters
+  // Check if we're coming from a specific user
   const urlParams = new URLSearchParams(window.location.search);
-  currentUserId = urlParams.get('user');
-  currentUserName = urlParams.get('name');
+  const userId = urlParams.get('userId');
 
-  if (!currentUserId || !currentUserName) {
-    window.location.href = "charts.html";
+  if (userId) {
+    // Redirect to specific chat
+    window.location.href = `charts.html?userId=${userId}`;
     return;
   }
 
-  // Initialize chat
-  await initializeChat();
-  await loadMessages();
-  
-  // Initialize WebSocket connection for real-time messaging
-  initializeWebSocket();
+  // Check user subscription status
+  const userSubscription = await checkUserSubscription();
+
+  if (userSubscription === 'free') {
+    document.getElementById('premiumNotice').style.display = 'block';
+    document.getElementById('noChats').style.display = 'block';
+    return;
+  }
+
+  // Load user's conversations
+  await loadConversations();
 });
+
+async function checkUserSubscription() {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${config.API_BASE_URL}/api/user/subscription-status`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.subscription || 'free';
+    }
+  } catch (error) {
+    console.error('Error checking subscription:', error);
+  }
+
+  return 'free';
+}
+
+async function loadConversations() {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${config.API_BASE_URL}/api/user/conversations`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (response.ok) {
+      const conversations = await response.json();
+      displayConversations(conversations);
+    } else {
+      document.getElementById('noChats').style.display = 'block';
+    }
+  } catch (error) {
+    console.error('Error loading conversations:', error);
+    document.getElementById('noChats').style.display = 'block';
+  }
+}
+
+function displayConversations(conversations) {
+  const container = document.getElementById('conversationsList');
+
+  if (conversations.length === 0) {
+    document.getElementById('noChats').style.display = 'block';
+    return;
+  }
+
+  container.innerHTML = '';
+
+  conversations.forEach(conversation => {
+    const conversationElement = document.createElement('div');
+    conversationElement.className = 'conversation-item';
+
+    const photoUrl = conversation.profile_photo_url || 'https://via.placeholder.com/60?text=No+Photo';
+    const lastMessage = conversation.last_message || 'Start a conversation...';
+    const isOnline = conversation.is_online || false;
+
+    conversationElement.innerHTML = `
+      <img src="${photoUrl}" alt="Profile" class="conversation-photo" onclick="showProfilePhoto('${conversation.user_id}', '${photoUrl}', '${conversation.full_name}')">
+      <div class="conversation-info">
+        <div class="conversation-name">${conversation.full_name}</div>
+        <div class="conversation-preview">${lastMessage}</div>
+      </div>
+      <div class="conversation-status">
+        <div class="status-indicator" style="background: ${isOnline ? '#28a745' : '#dc3545'}"></div>
+        <span>${isOnline ? 'Online' : 'Offline'}</span>
+      </div>
+    `;
+
+    conversationElement.addEventListener('click', (e) => {
+      if (!e.target.classList.contains('conversation-photo')) {
+        window.location.href = `charts.html?userId=${conversation.user_id}`;
+      }
+    });
+
+    container.appendChild(conversationElement);
+  });
+}
+
+function showProfilePhoto(userId, photoUrl, fullName) {
+  const floatingProfilePhoto = document.getElementById('floatingProfilePhoto');
+  const floatingProfilePic = document.getElementById('floatingProfilePic');
+  const viewProfileBtn = document.getElementById('viewProfileBtn');
+  const closeProfileBtn = document.getElementById('closeProfileBtn');
+
+  floatingProfilePic.src = photoUrl;
+  floatingProfilePic.onerror = function() {
+    this.src = 'https://via.placeholder.com/300?text=No+Photo';
+  };
+
+  floatingProfilePhoto.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+
+  closeProfileBtn.onclick = () => {
+    floatingProfilePhoto.style.display = 'none';
+    document.body.style.overflow = '';
+  };
+
+  viewProfileBtn.onclick = () => {
+    window.location.href = `profile.html?id=${userId}`;
+  };
+}
 
 async function initializeChat() {
   document.getElementById('chatUsername').textContent = currentUserName;
@@ -137,25 +242,6 @@ function handleKeyPress(event) {
   if (event.key === 'Enter') {
     sendMessage();
   }
-}
-
-function showProfilePhoto() {
-  const floating = document.getElementById('floatingProfilePhoto');
-  const img = document.getElementById('floatingProfilePic');
-  
-  img.src = currentUserPhoto || 'https://via.placeholder.com/400';
-  img.alt = currentUserName;
-  floating.style.display = 'flex';
-  
-  document.getElementById('closeProfileBtn').onclick = () => {
-    floating.style.display = 'none';
-  };
-  
-  floating.onclick = (e) => {
-    if (e.target === floating) {
-      floating.style.display = 'none';
-    }
-  };
 }
 
 function formatMessageTime(timestamp) {
