@@ -217,15 +217,25 @@ document.addEventListener('DOMContentLoaded', async () => {
               });
 
               if (!response.ok) {
-                throw new Error('Failed to update interaction');
+                const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+                throw new Error(errorData.message || 'Failed to update interaction');
               }
 
+              const responseData = await response.json();
+              console.log("✅ User selected successfully:", responseData);
               renderProfiles();
             } catch (error) {
               console.error("Error selecting user:", error);
-              alert("Something went wrong while selecting the user.");
+              // Revert the changes if API call failed
+              allProfiles.push(user);
+              selectedProfiles = selectedProfiles.filter(u => u.id !== user.id);
+              updateLocalStorage();
+              renderProfiles();
+              alert("Something went wrong while selecting the user. Please try again.");
             }
           });
+        } else {
+          console.error("Select button not found for user:", user.id);
         }
         const removeButton = actions.querySelector(".remove-btn");
         if (removeButton) {
@@ -235,6 +245,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateLocalStorage();
             renderProfiles();
           });
+        } else {
+          console.error("Remove button not found for user:", user.id);
         }
 
       } else if (activeSection === "selected") {
@@ -250,6 +262,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateLocalStorage();
             renderProfiles();
           });
+        } else {
+          console.error("Cancel button not found for user:", user.id);
         }
         const removeButton = actions.querySelector(".remove-btn");
         if (removeButton) {
@@ -259,6 +273,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateLocalStorage();
             renderProfiles();
           });
+        } else {
+          console.error("Remove button not found for user:", user.id);
         }
 
       } else if (activeSection === "selected-you") {

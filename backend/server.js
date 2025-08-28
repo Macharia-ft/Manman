@@ -473,9 +473,16 @@ app.post('/api/users/reject/:email', async (req, res) => {
 // ✅ API route to update interaction when a user selects another user
 app.post('/api/users/select/:email', async (req, res) => {
   const currentUserEmail = req.params.email;
-  const { selectedUserId, action } = req.body;  // Get the selected user ID and action from the request body
+  const { selectedUserId, action } = req.body;
+
+  console.log(`📦 Select user request - Current user: ${currentUserEmail}, Selected user: ${selectedUserId}, Action: ${action}`);
 
   try {
+    // Validate input
+    if (!selectedUserId || !action) {
+      return res.status(400).json({ success: false, message: "Missing selectedUserId or action" });
+    }
+
     // Fetch the current user's ID based on the email
     const currentUserId = await getUserIdByEmail(currentUserEmail);
     if (!currentUserId) {
@@ -487,9 +494,10 @@ app.post('/api/users/select/:email', async (req, res) => {
       .from('user_interactions')
       .select('*')
       .eq('current_user_id', currentUserId)
-      .eq('selected_user_id', selectedUserId);
+      .eq('target_user_id', selectedUserId);
 
     if (error) {
+      console.error('❌ Error checking user interaction:', error);
       return res.status(500).json({ success: false, message: 'Error checking user interaction' });
     }
 
@@ -499,7 +507,38 @@ app.post('/api/users/select/:email', async (req, res) => {
         .from('user_interactions')
         .update({ action: action })
         .eq('current_user_id', currentUserId)
-        .eq('selected_user_id', selectedUserId);
+        .eq('target_user_id', selectedUserId);
+
+      if (updateError) {
+        console.error('❌ Error updating user interaction:', updateError);
+        return res.status(500).json({ success: false, message: 'Error updating user interaction' });
+      }
+
+      console.log('✅ User interaction updated successfully');
+      return res.json({ success: true, message: 'Interaction updated successfully' });
+    } else {
+      // If no interaction exists, create a new one
+      const { error: insertError } = await supabase
+        .from('user_interactions')
+        .insert({
+          current_user_id: currentUserId,
+          target_user_id: selectedUserId,
+          selected_user_id: selectedUserId,
+          action: action
+        });
+
+      if (insertError) {
+        console.error('❌ Error creating user interaction:', insertError);
+        return res.status(500).json({ success: false, message: 'Error creating user interaction' });
+      }
+
+      console.log('✅ User interaction created successfully');
+      return res.json({ success: true, message: 'Interaction created successfully' });
+    }
+  } catch (error) {
+    console.error('❌ Error in select user endpoint:', error);
+    return res.status(500).json({ success: false, message: 'Server error during user selection' });
+  }d_user_id', selectedUserId);
 
       if (updateError) {
         return res.status(500).json({ success: false, message: 'Error updating interaction' });
