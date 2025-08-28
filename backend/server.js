@@ -481,7 +481,7 @@ app.post('/api/users/accept/:email', async (req, res) => {
       .from('user_interactions')
       .update({ action: 'accepted' })
       .eq('current_user_id', currentUserId)
-      .eq('selected_user_id', selectedUserId);
+      .eq('target_user_id', selectedUserId);
 
     if (error) {
       console.error("Error updating interaction to accepted:", error);
@@ -508,7 +508,7 @@ app.post('/api/users/reject/:email', async (req, res) => {
       .from('user_interactions')
       .update({ action: 'rejected' })
       .eq('current_user_id', currentUserId)
-      .eq('selected_user_id', selectedUserId);
+      .eq('target_user_id', selectedUserId);
 
     if (error) {
       console.error("Error updating interaction to rejected:", error);

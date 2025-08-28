@@ -95,10 +95,77 @@ router.get("/subscription-status", async (req, res) => {
 // Add conversations endpoint
 router.get("/conversations", async (req, res) => {
   try {
-    // Return empty array for now - implement when you have the conversations table
-    res.json([]);
+    const jwt = require("jsonwebtoken");
+    const { createClient } = require("@supabase/supabase-js");
+    
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseAnonKey = process.env.ANON_KEY;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.json([]);
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const email = decoded.email;
+
+    // Get current user ID
+    const { data: currentUser, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single();
+
+    if (userError || !currentUser) {
+      return res.json([]);
+    }
+
+    const currentUserId = currentUser.id;
+
+    // Get all mutual matches (both users have accepted each other)
+    const { data: mutualMatches, error: matchError } = await supabase
+      .from('user_interactions')
+      .select(`
+        target_user_id,
+        users!user_interactions_target_user_id_fkey(id, full_name, profile_photo_url)
+      `)
+      .eq('current_user_id', currentUserId)
+      .eq('action', 'accepted');
+
+    if (matchError) {
+      console.error('Error fetching mutual matches:', matchError);
+      return res.json([]);
+    }
+
+    // Filter to only include users who have also accepted the current user
+    const conversations = [];
+    for (const match of mutualMatches) {
+      const { data: reverseMatch, error: reverseError } = await supabase
+        .from('user_interactions')
+        .select('id')
+        .eq('current_user_id', match.target_user_id)
+        .eq('target_user_id', currentUserId)
+        .eq('action', 'accepted')
+        .single();
+
+      if (!reverseError && reverseMatch) {
+        const user = match.users;
+        conversations.push({
+          user_id: user.id,
+          user_name: user.full_name,
+          profile_photo_url: user.profile_photo_url,
+          last_message: 'Start a conversation...',
+          last_message_time: null,
+          unread_count: 0
+        });
+      }
+    }
+
+    res.json(conversations);
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('Conversations error:', error);
+    res.json([]);
   }
 });
 
