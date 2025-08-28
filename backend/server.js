@@ -1,6 +1,7 @@
 require("dotenv").config({ path: "./backend/.env" });
 const express = require("express");
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
 const { createClient } = require("@supabase/supabase-js");
 
 
@@ -466,6 +467,103 @@ app.post('/api/users/reject/:email', async (req, res) => {
     res.json({ success: true, message: 'User rejected' });
   } catch (error) {
     console.error("Error occurred:", error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ✅ API route to fetch user interactions
+app.get('/api/users/interactions/:email', async (req, res) => {
+  const currentUserEmail = req.params.email;
+
+  try {
+    const currentUserId = await getUserIdByEmail(currentUserEmail);
+
+    // Fetch all interactions for the current user
+    const { data: interactions, error } = await supabase
+      .from('user_interactions')
+      .select(`
+        *,
+        target_user:users!user_interactions_target_user_id_fkey(*)
+      `)
+      .eq('current_user_id', currentUserId);
+
+    if (error) {
+      console.error("Error fetching user interactions:", error);
+      throw new Error('Error fetching user interactions');
+    }
+
+    // Transform the data to include user details
+    const userInteractions = interactions.map(interaction => ({
+      ...interaction.target_user,
+      action: interaction.action,
+      originalLocation: interaction.original_location || 'all',
+      interactionId: interaction.id
+    }));
+
+    res.json(userInteractions);
+  } catch (error) {
+    console.error("Error occurred:", error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ✅ API route to handle user interactions (select, remove, accept, etc.)
+app.post('/api/users/interact', async (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  
+  if (!token) {
+    return res.status(401).json({ success: false, message: "Missing token" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const currentUserEmail = decoded.email;
+    const { targetUserId, action, originalLocation } = req.body;
+
+    const currentUserId = await getUserIdByEmail(currentUserEmail);
+
+    // Check if interaction already exists
+    const { data: existingInteraction, error: checkError } = await supabase
+      .from('user_interactions')
+      .select('*')
+      .eq('current_user_id', currentUserId)
+      .eq('target_user_id', targetUserId)
+      .single();
+
+    if (existingInteraction) {
+      // Update existing interaction
+      const { error: updateError } = await supabase
+        .from('user_interactions')
+        .update({ 
+          action: action,
+          original_location: originalLocation || existingInteraction.original_location || 'all',
+          updated_at: new Date().toISOString()
+        })
+        .eq('current_user_id', currentUserId)
+        .eq('target_user_id', targetUserId);
+
+      if (updateError) {
+        throw new Error('Error updating interaction');
+      }
+    } else {
+      // Create new interaction
+      const { error: insertError } = await supabase
+        .from('user_interactions')
+        .insert({
+          current_user_id: currentUserId,
+          target_user_id: targetUserId,
+          action: action,
+          original_location: originalLocation || 'all'
+        });
+
+      if (insertError) {
+        throw new Error('Error creating interaction');
+      }
+    }
+
+    res.json({ success: true, message: 'Interaction updated successfully' });
+  } catch (error) {
+    console.error("Error in user interaction:", error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 });

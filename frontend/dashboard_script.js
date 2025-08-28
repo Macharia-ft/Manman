@@ -1,4 +1,16 @@
 
+// Import JWT decode functionality if needed
+function decodeJWT(token) {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    return JSON.parse(atob(parts[1]));
+  } catch (e) {
+    console.error("Error decoding token:", e);
+    return null;
+  }
+}
+
 // Add event listeners after DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
   // Add null checks for all event listeners
@@ -463,14 +475,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function getCurrentUserFromToken() {
     const token = localStorage.getItem("token");
     if (!token) return null;
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-    try {
-      return JSON.parse(atob(parts[1]));
-    } catch (e) {
-      console.error("Error decoding token:", e);
-      return null;
-    }
+    return decodeJWT(token);
   }
 
   async function checkUserSubscription() {
