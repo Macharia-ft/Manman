@@ -28,8 +28,18 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       body: JSON.stringify({ email, password })
     });
 
-    const data = await res.json();
     loader.style.display = "none";
+
+    // Check if response is JSON
+    const contentType = res.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await res.text();
+      console.error('Non-JSON response:', text);
+      msg.innerText = "Server error. Please try again.";
+      return;
+    }
+
+    const data = await res.json();
 
     if (res.ok && data.token) {
       // ✅ Token validation
@@ -112,6 +122,15 @@ document.getElementById("forgotPasswordLink").addEventListener("click", async (e
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email })
     });
+
+    // Check if response is JSON
+    const contentType = res.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await res.text();
+      console.error('Non-JSON response:', text);
+      msg.innerText = "Server error. Please try again.";
+      return;
+    }
 
     const data = await res.json();
 
