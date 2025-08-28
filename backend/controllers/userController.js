@@ -501,58 +501,41 @@ module.exports = {
     }
 
     const userEmail = decoded.email;
+    const updateData = req.body;
+
+    // Handle array fields properly
+    if (updateData.pref_languages && typeof updateData.pref_languages === 'string') {
+      // If it's already in PostgreSQL array format {item1,item2}, keep it
+      // If it's a comma-separated string, convert it
+      if (!updateData.pref_languages.startsWith('{')) {
+        updateData.pref_languages = `{${updateData.pref_languages}}`;
+      }
+    }
 
     try {
-      // Check if user exists in Supabase
-      const { data: existingUser, error: checkError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', userEmail)
-        .single();
-
-      if (checkError && checkError.code !== 'PGRST116') {
-        console.error("🔥 Update Preferences Error:", checkError);
-        return res.status(500).json({
-          success: false,
-          message: checkError.message
-        });
-      }
-
-      if (!existingUser) {
-        return res.status(404).json({
-          success: false,
-          message: "User not found"
-        });
-      }
-
-      // Get preferences from request body (don't update current_step for existing users)
-      const preferencesData = req.body;
-      const updateData = {
-        ...preferencesData,
-        updated_at: new Date().toISOString()
-      };
-
-      const { error: updateError } = await supabase
+      const { data, error } = await supabase
         .from('users')
         .update(updateData)
-        .eq('email', userEmail);
+        .eq('email', userEmail)
+        .select();
 
-      if (updateError) {
-        console.error("🔥 Update Error:", updateError);
+      if (error) {
+        console.error("🔥 Update Error:", error);
         return res.status(500).json({
           success: false,
-          message: updateError.message
+          message: error.message
         });
       }
 
       console.log("✅ Preferences updated for:", userEmail);
       res.status(200).json({
         success: true,
-        message: "Preferences updated successfully"
+        message: "Preferences updated successfully",
+        data: data[0]
       });
 
     } catch (error) {
-      console.error("🔥 Preferences update error:", error.message);
+      console.error("🔥 Update preferences error:", error.message);
       res.status(500).json({
         success: false,
         message: "Server error during preferences update"

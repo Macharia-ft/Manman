@@ -69,7 +69,7 @@ form.addEventListener("submit", async (e) => {
     pref_country_of_residence: formData.get("pref_country_of_residence"),
     pref_county_of_residence: formData.get("pref_county_of_residence"),
     pref_country: formData.get("pref_country"),
-    pref_languages: formData.getAll("pref_languages"),
+    pref_languages: formData.getAll("pref_languages").length > 0 ? `{${formData.getAll("pref_languages").join(',')}}` : null,
     pref_religion: formData.get("pref_religion"),
     pref_religion_importance: formData.get("pref_religion_importance"),
     pref_height: parseInt(formData.get("pref_height")),
