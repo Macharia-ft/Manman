@@ -21,15 +21,9 @@ const app = express();
 // ✅ CORS setup
 app.use(cors({
   origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
-// Add middleware to ensure JSON responses
-app.use((req, res, next) => {
-  res.setHeader('Content-Type', 'application/json');
-  next();
-});
 
 // ✅ Handle large requests (videos + images)
 app.use(express.json({ limit: "200mb" }));
@@ -1031,20 +1025,6 @@ app.get('/api/user', async (req, res) => {
 // ✅ Root test route
 app.get("/", (req, res) => {
   res.send("✅ Takeyours Identity Verification API is running.");
-});
-
-// Global error handler
-app.use((err, req, res, next) => {
-  console.error('Global error handler:', err);
-  res.status(500).json({ 
-    error: 'Internal server error',
-    message: err.message 
-  });
-});
-
-// Handle 404 for API routes
-app.use('/api/*', (req, res) => {
-  res.status(404).json({ error: 'API endpoint not found' });
 });
 
 // ✅ Start server
