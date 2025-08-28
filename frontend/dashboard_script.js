@@ -46,7 +46,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   let selectedYouProfiles = [];
   let removedProfiles = [];
   let acceptedProfiles = [];
-  let matchedProfiles = [];
   let activeSection = "all";
 
   // Show spinner
@@ -126,7 +125,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     selectedProfiles = userInteractions.filter(u => u.action === 'selected').map(u => ({...u, originalLocation: u.original_location || 'all'}));
     removedProfiles = userInteractions.filter(u => u.action === 'removed').map(u => ({...u, originalLocation: u.original_location || 'all'}));
     acceptedProfiles = userInteractions.filter(u => u.action === 'accepted').map(u => ({...u, originalLocation: u.original_location || 'selected-you'}));
-    matchedProfiles = userInteractions.filter(u => u.action === 'matched').map(u => ({...u, originalLocation: u.original_location || 'accepted'}));
 
     // Remove already categorized profiles from allProfiles
     const interactedUserIds = userInteractions.map(u => u.id);
@@ -178,7 +176,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (activeSection === "selected-you") profilesToRender = selectedYouProfiles;
     if (activeSection === "removed") profilesToRender = removedProfiles;
     if (activeSection === "accepted") profilesToRender = acceptedProfiles;
-    if (activeSection === "matched") profilesToRender = matchedProfiles;
 
     if (profilesToRender.length === 0) {
       if (activeSection === "all") {
@@ -296,62 +293,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
       } else if (activeSection === "accepted") {
-        const isMutualMatch = user.isMutualMatch || false;
-
-        if (isMutualMatch) {
-          actions.innerHTML = `
-            <button class="select-btn matched-btn">Matched - Chat</button>
-            <button class="remove-btn">Cancel Match</button>
-          `;
-          
-          const chatButton = actions.querySelector(".select-btn");
-          if (chatButton) {
-            chatButton.addEventListener("click", async () => {
-              const subscription = await checkUserSubscription();
-              if (subscription === 'free') {
-                showPremiumNotification();
-              } else {
-                await moveProfile(user, 'accepted', 'matched', 'matched');
-                window.location.href = `chat.html?userId=${user.id}`;
-              }
-            });
-          }
-        } else {
-          actions.innerHTML = `
-            <button class="select-btn disabled-btn" disabled>Waiting for Response</button>
-            <button class="remove-btn">Cancel Match</button>
-          `;
-        }
+        actions.innerHTML = `
+          <button class="select-btn disabled-btn" disabled>Waiting for Response</button>
+          <button class="remove-btn">Cancel Match</button>
+        `;
 
         const cancelMatchButton = actions.querySelector(".remove-btn");
         if (cancelMatchButton) {
           cancelMatchButton.addEventListener("click", async () => {
             await moveProfile(user, 'accepted', 'removed', 'removed');
-          });
-        }
-
-      } else if (activeSection === "matched") {
-        actions.innerHTML = `
-          <button class="select-btn">Open Chat</button>
-          <button class="remove-btn">Unmatch</button>
-        `;
-        
-        const openChatButton = actions.querySelector(".select-btn");
-        if (openChatButton) {
-          openChatButton.addEventListener("click", async () => {
-            const subscription = await checkUserSubscription();
-            if (subscription === 'free') {
-              showPremiumNotification();
-            } else {
-              window.location.href = `chat.html?userId=${user.id}`;
-            }
-          });
-        }
-        
-        const unmatchButton = actions.querySelector(".remove-btn");
-        if (unmatchButton) {
-          unmatchButton.addEventListener("click", async () => {
-            await moveProfile(user, 'matched', 'removed', 'removed');
           });
         }
 
@@ -405,14 +355,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (fromSection === 'selected') selectedProfiles = selectedProfiles.filter(u => u.id !== user.id);
       if (fromSection === 'selected-you') selectedYouProfiles = selectedYouProfiles.filter(u => u.id !== user.id);
       if (fromSection === 'accepted') acceptedProfiles = acceptedProfiles.filter(u => u.id !== user.id);
-      if (fromSection === 'matched') matchedProfiles = matchedProfiles.filter(u => u.id !== user.id);
       if (fromSection === 'removed') removedProfiles = removedProfiles.filter(u => u.id !== user.id);
 
       if (toSection === 'all') allProfiles.push(user);
       if (toSection === 'selected') selectedProfiles.push(user);
       if (toSection === 'selected-you') selectedYouProfiles.push(user);
       if (toSection === 'accepted') acceptedProfiles.push(user);
-      if (toSection === 'matched') matchedProfiles.push(user);
       if (toSection === 'removed') removedProfiles.push(user);
 
       renderProfiles();

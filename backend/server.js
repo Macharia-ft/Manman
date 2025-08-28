@@ -283,7 +283,7 @@ app.get('/api/users/selected-you/:email', async (req, res) => {
     const { data, error } = await supabase
       .from('user_interactions')
       .select('current_user_id, action')
-      .eq('selected_user_id', currentUserId)
+      .eq('target_user_id', currentUserId)
       .eq('action', 'selected');  // Only fetching selections
 
     if (error) {
@@ -483,7 +483,7 @@ app.get('/api/users/interactions/:email', async (req, res) => {
       .from('user_interactions')
       .select(`
         *,
-        target_user:users(*)
+        target_user:users!user_interactions_target_user_id_fkey(*)
       `)
       .eq('current_user_id', currentUserId);
 
@@ -621,7 +621,6 @@ app.post('/api/users/select/:email', async (req, res) => {
         .insert({
           current_user_id: currentUserId,
           target_user_id: selectedUserId,
-          selected_user_id: selectedUserId,
           action: action
         });
 
