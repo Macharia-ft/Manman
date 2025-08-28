@@ -1,5 +1,71 @@
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Check if user has premium subscription
+  const token = localStorage.getItem("token");
+  if (!token) {
+    window.location.href = 'login.html';
+    return;
+  }
+
+  try {
+    const response = await fetch(`${config.API_BASE_URL}/api/user/subscription-status`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.subscription === 'free') {
+        showPremiumNotification();
+        return;
+      }
+    }
+  } catch (error) {
+    console.error('Error checking subscription:', error);
+  }
+
+  function showPremiumNotification() {
+    document.body.innerHTML = `
+      <div style="
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        text-align: center;
+        max-width: 400px;
+        width: 90%;
+      ">
+        <h2 style="color: #ff6b35; margin-bottom: 15px;">🚀 Premium Feature</h2>
+        <p style="margin-bottom: 20px;">Charts and analytics are only available for Premium subscribers!</p>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+          <button onclick="window.location.href='subscriptions.html'" style="
+            background: #007BFF; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer;
+          ">
+            Upgrade to Premium
+          </button>
+          <button onclick="window.location.href='dashboard_page.html'" style="
+            background: #6c757d; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer;
+          ">
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    `;
+    return;
+  }
   const token = localStorage.getItem("token");
   
   if (!token) {

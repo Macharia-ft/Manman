@@ -332,10 +332,94 @@ app.get('/api/users/selected-you/:email', async (req, res) => {
   }
 });
 
+// ✅ API route to send match request
+app.post('/api/users/match/:email', async (req, res) => {
+  const currentUserEmail = req.params.email;
+  const { matchedUserId } = req.body;
+
+  try {
+    const currentUserId = await getUserIdByEmail(currentUserEmail);
+
+    // Check if match already exists
+    const { data: existingMatch, error: matchError } = await supabase
+      .from('matches')
+      .select('*')
+      .or(`and(sender_id.eq.${currentUserId},receiver_id.eq.${matchedUserId}),and(sender_id.eq.${matchedUserId},receiver_id.eq.${currentUserId})`)
+      .single();
+
+    if (existingMatch) {
+      return res.status(400).json({ success: false, message: "Match already exists" });
+    }
+
+    // Create match request
+    const { data: newMatch, error: createError } = await supabase
+      .from('matches')
+      .insert({
+        sender_id: currentUserId,
+        receiver_id: matchedUserId,
+        status: 'pending',
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (createError) {
+      console.error("Match request creation error:", createError.message);
+      return res.status(500).json({ success: false, message: "Failed to create match request" });
+    }
+
+    res.json({ success: true, message: "Match request sent successfully", match: newMatch });
+  } catch (error) {
+    console.error("Error in match request:", error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ✅ API route to get mutual matches
+app.get('/api/users/mutual-matches/:email', async (req, res) => {
+  const currentUserEmail = req.params.email;
+
+  try {
+    const currentUserId = await getUserIdByEmail(currentUserEmail);
+
+    // Get mutual matches where both users have matched each other
+    const { data: mutualMatches, error } = await supabase
+      .from('matches')
+      .select(`
+        *,
+        sender:users!matches_sender_id_fkey(*),
+        receiver:users!matches_receiver_id_fkey(*)
+      `)
+      .or(`sender_id.eq.${currentUserId},receiver_id.eq.${currentUserId}`)
+      .eq('status', 'accepted');
+
+    if (error) {
+      console.error("Error fetching mutual matches:", error);
+      return res.status(500).json({ success: false, message: error.message });
+    }
+
+    // Process mutual matches to return the other user's profile
+    const processedMatches = mutualMatches.map(match => {
+      const otherUser = match.sender_id === currentUserId ? match.receiver : match.sender;
+      return {
+        ...otherUser,
+        matchId: match.id,
+        matchedAt: match.created_at,
+        isMutualMatch: true
+      };
+    });
+
+    res.json(processedMatches);
+  } catch (error) {
+    console.error("Error occurred:", error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // ✅ API route to accept a selected user
 app.post('/api/users/accept/:email', async (req, res) => {
   const currentUserEmail = req.params.email;
-  const { selectedUserId } = req.body;  // Expecting selected user's ID
+  const { selectedUserId } = req.body;
 
   try {
     const currentUserId = await getUserIdByEmail(currentUserEmail);

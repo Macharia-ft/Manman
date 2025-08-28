@@ -1,3 +1,4 @@
+
 document.addEventListener('DOMContentLoaded', async () => {
   const container = document.getElementById('user-container');
   const filterButtons = document.querySelectorAll('.filters button');
@@ -24,6 +25,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   let selectedYouProfiles = JSON.parse(localStorage.getItem(userStorageKey("selectedYouProfiles"))) || [];
   let removedProfiles = JSON.parse(localStorage.getItem(userStorageKey("removedProfiles"))) || [];
   let acceptedProfiles = JSON.parse(localStorage.getItem(userStorageKey("acceptedProfiles"))) || [];
+  let matchedProfiles = JSON.parse(localStorage.getItem(userStorageKey("matchedProfiles"))) || [];
   let activeSection = "all";
 
   try {
@@ -43,18 +45,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const profileIcon = document.querySelector('.profile-icon img');
     if (profileIcon) {
-      // Set profile photo
-        const profilePhotoUrl = profile_photo_url || null; // Use fetched profile_photo_url
-        if (profilePhotoUrl && profilePhotoUrl !== 'null' && profilePhotoUrl !== null) {
-          profileIcon.src = profilePhotoUrl;
-          profileIcon.onerror = () => {
-            console.error("❌ Profile icon failed to load:", profilePhotoUrl);
-            profileIcon.src = "https://via.placeholder.com/100?text=No+Photo";
-          };
-        } else {
-          console.log("❌ No profile photo for current user.");
+      const profilePhotoUrl = profile_photo_url || null;
+      if (profilePhotoUrl && profilePhotoUrl !== 'null' && profilePhotoUrl !== null) {
+        profileIcon.src = profilePhotoUrl;
+        profileIcon.onerror = () => {
+          console.error("❌ Profile icon failed to load:", profilePhotoUrl);
           profileIcon.src = "https://via.placeholder.com/100?text=No+Photo";
-        }
+        };
+      } else {
+        console.log("❌ No profile photo for current user.");
+        profileIcon.src = "https://via.placeholder.com/100?text=No+Photo";
+      }
       profileIcon.onload = function() {
         console.log('✅ Profile icon loaded:', this.src);
       };
@@ -62,7 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Show the big profile photo when clicked
     profileIcon.addEventListener('click', () => {
-      showFloatingProfile(currentUser, 'edit'); // Show the floating profile with "Edit" button
+      showFloatingProfile(currentUser, 'edit');
     });
 
     const userResponse = await fetch(`${config.API_BASE_URL}/api/users/${currentUserEmail}`, {
@@ -77,20 +78,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const responseData = await userResponse.json();
 
-    // Handle new response format with pre-filtering - only for all profiles
     if (responseData.shouldAdjustPreferences) {
-      // Store the no users state
       allProfiles = [];
       localStorage.setItem(userStorageKey("allProfiles"), JSON.stringify(allProfiles));
-
-      // Don't return here - let renderProfiles() handle showing the message only for "all" section
     }
 
-    // Filter out already selected, removed, or accepted profiles
+    // Filter out profiles that are already in other sections
     allProfiles = (responseData.users || responseData).filter(profile => 
       !selectedProfiles.some(selected => selected.id === profile.id) &&
       !removedProfiles.some(removed => removed.id === profile.id) &&
-      !acceptedProfiles.some(accepted => accepted.id === profile.id)
+      !acceptedProfiles.some(accepted => accepted.id === profile.id) &&
+      !matchedProfiles.some(matched => matched.id === profile.id)
     );
 
     const selectedYouResponse = await fetch(`${config.API_BASE_URL}/api/users/selected-you/${currentUserEmail}`, {
@@ -130,10 +128,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (activeSection === "selected-you") profilesToRender = selectedYouProfiles;
     if (activeSection === "removed") profilesToRender = removedProfiles;
     if (activeSection === "accepted") profilesToRender = acceptedProfiles;
+    if (activeSection === "matched") profilesToRender = matchedProfiles;
 
     if (profilesToRender.length === 0) {
       if (activeSection === "all") {
-        // Check if we need to show the no users found message for all profiles
         container.innerHTML = `
           <div class="no-matches-message">
             <h3>No users found</h3>
@@ -155,12 +153,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       const videoUrl = user.profile_video_url && user.profile_video_url.trim() !== '' ? user.profile_video_url : null;
       const countryOfBirth = user.country_of_birth || 'Unknown';
       const matchScore = user.matchScore || '0%';
-
-      console.log(`🔍 Rendering user ${user.id}:`, {
-        photoUrl,
-        videoUrl,
-        full_name: user.full_name
-      });
 
       const userCard = document.createElement("div");
       userCard.classList.add("profile-card");
@@ -229,6 +221,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           updateLocalStorage();
           renderProfiles();
         });
+
       } else if (activeSection === "selected") {
         actions.innerHTML = `
           <button class="select-btn">Cancel Selection</button>
@@ -246,6 +239,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           updateLocalStorage();
           renderProfiles();
         });
+
       } else if (activeSection === "selected-you") {
         actions.innerHTML = `
           <button class="select-btn">Accept</button>
@@ -269,10 +263,46 @@ document.addEventListener('DOMContentLoaded', async () => {
           updateLocalStorage();
           renderProfiles();
         });
+
       } else if (activeSection === "accepted") {
+        // Check if this is a mutual match
+        const isMutualMatch = user.isMutualMatch || false;
+        
+        if (isMutualMatch) {
+          actions.innerHTML = `
+            <button class="select-btn matched-btn">Matched - Chat</button>
+            <button class="remove-btn">Cancel Match</button>
+          `;
+          actions.querySelector(".select-btn").addEventListener("click", async () => {
+            const subscription = await checkUserSubscription();
+            if (subscription === 'free') {
+              showPremiumNotification();
+            } else {
+              // Move to matched section and open chat
+              matchedProfiles.push(user);
+              acceptedProfiles = acceptedProfiles.filter(u => u.id !== user.id);
+              updateLocalStorage();
+              window.location.href = `chat.html?userId=${user.id}`;
+            }
+          });
+        } else {
+          actions.innerHTML = `
+            <button class="select-btn disabled-btn" disabled>User Found Match</button>
+            <button class="remove-btn">Cancel Match</button>
+          `;
+        }
+        
+        actions.querySelector(".remove-btn").addEventListener("click", () => {
+          removedProfiles.push(user);
+          acceptedProfiles = acceptedProfiles.filter(u => u.id !== user.id);
+          updateLocalStorage();
+          renderProfiles();
+        });
+
+      } else if (activeSection === "matched") {
         actions.innerHTML = `
-          <button class="select-btn">Matched</button>
-          <button class="remove-btn">Cancel Match</button>
+          <button class="select-btn">Open Chat</button>
+          <button class="remove-btn">Unmatch</button>
         `;
         actions.querySelector(".select-btn").addEventListener("click", async () => {
           const subscription = await checkUserSubscription();
@@ -283,11 +313,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
         });
         actions.querySelector(".remove-btn").addEventListener("click", () => {
-          allProfiles.push(user);
-          acceptedProfiles = acceptedProfiles.filter(u => u.id !== user.id);
+          removedProfiles.push(user);
+          matchedProfiles = matchedProfiles.filter(u => u.id !== user.id);
           updateLocalStorage();
           renderProfiles();
         });
+
       } else if (activeSection === "removed") {
         actions.innerHTML = `<button class="restore-btn">Restore</button>`;
         actions.querySelector(".restore-btn").addEventListener("click", () => {
@@ -321,13 +352,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     floatingProfilePhoto.style.display = 'block';
     document.body.style.overflow = 'hidden';
 
-    // Add event listener for closing the floating profile
     closeProfileBtn.onclick = () => {
       floatingProfilePhoto.style.display = 'none';
       document.body.style.overflow = '';
     };
 
-    // Prevent clicks inside the floating profile from closing it
     floatingProfilePhoto.querySelector('.floating-profile-content').addEventListener('click', (event) => {
       event.stopPropagation();
     });
@@ -355,6 +384,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     localStorage.setItem(userStorageKey("selectedYouProfiles"), JSON.stringify(selectedYouProfiles));
     localStorage.setItem(userStorageKey("removedProfiles"), JSON.stringify(removedProfiles));
     localStorage.setItem(userStorageKey("acceptedProfiles"), JSON.stringify(acceptedProfiles));
+    localStorage.setItem(userStorageKey("matchedProfiles"), JSON.stringify(matchedProfiles));
   }
 
   function getCurrentUserFromToken() {
@@ -435,7 +465,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     document.body.appendChild(notification);
     
-    // Auto-remove after 10 seconds
     setTimeout(() => {
       if (notification.parentElement) {
         notification.remove();

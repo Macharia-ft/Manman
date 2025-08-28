@@ -244,6 +244,43 @@ body {
   background-color: darkred;
 }
 
+.disabled-btn {
+  background-color: #ccc !important;
+  color: #666 !important;
+  cursor: not-allowed !important;
+}
+
+.matched-btn {
+  background-color: #28a745 !important;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.restore-btn {
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  width: 100%;
+}
+
+.restore-btn:hover {
+  background-color: #138496;
+}
+
+.filters button[data-section="matched"].active {
+  background-color: #28a745;
+  color: white;
+}
+
 /* Responsive - Mobile */
 @media (max-width: 768px) {
   .sidebar {
