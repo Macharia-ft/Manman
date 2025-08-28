@@ -93,35 +93,75 @@ CREATE INDEX idx_subscriptions_user ON subscriptions(user_id);
 CREATE INDEX idx_subscriptions_status ON subscriptions(status);
 
 -- Insert sample data for testing (optional - remove if not needed)
--- Only insert if we have at least 3 users in the system
+-- Only insert if we have actual users with those IDs
 DO $$
+DECLARE
+    user_count INTEGER;
+    user1_exists BOOLEAN := FALSE;
+    user2_exists BOOLEAN := FALSE;
+    user3_exists BOOLEAN := FALSE;
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'users') THEN
-        IF (SELECT COUNT(*) FROM users) >= 3 THEN
-            INSERT INTO matches (sender_id, receiver_id, status) VALUES 
-            (1, 2, 'pending'),
-            (3, 1, 'accepted'),
-            (2, 3, 'rejected')
-            ON CONFLICT (sender_id, receiver_id) DO NOTHING;
+        -- Check if specific user IDs exist
+        SELECT COUNT(*) INTO user_count FROM users;
+        
+        IF user_count >= 3 THEN
+            -- Check if users with IDs 1, 2, 3 actually exist
+            SELECT EXISTS(SELECT 1 FROM users WHERE id = 1) INTO user1_exists;
+            SELECT EXISTS(SELECT 1 FROM users WHERE id = 2) INTO user2_exists;
+            SELECT EXISTS(SELECT 1 FROM users WHERE id = 3) INTO user3_exists;
             
-            INSERT INTO user_interactions (current_user_id, target_user_id, selected_user_id, action) VALUES 
-            (1, 2, 2, 'selected'),
-            (2, 3, 3, 'removed'),
-            (3, 1, 1, 'accepted')
-            ON CONFLICT DO NOTHING;
+            -- Only insert sample data if the specific users exist
+            IF user1_exists AND user2_exists AND user3_exists THEN
+                INSERT INTO matches (sender_id, receiver_id, status) VALUES 
+                (1, 2, 'pending'),
+                (3, 1, 'accepted'),
+                (2, 3, 'rejected')
+                ON CONFLICT (sender_id, receiver_id) DO NOTHING;
+                
+                INSERT INTO user_interactions (current_user_id, target_user_id, selected_user_id, action) VALUES 
+                (1, 2, 2, 'selected'),
+                (2, 3, 3, 'removed'),
+                (3, 1, 1, 'accepted')
+                ON CONFLICT DO NOTHING;
+                
+                RAISE NOTICE 'Sample data inserted successfully';
+            ELSE
+                RAISE NOTICE 'Sample data skipped - users with IDs 1, 2, 3 do not exist';
+            END IF;
+        ELSE
+            RAISE NOTICE 'Sample data skipped - not enough users (need at least 3)';
         END IF;
     END IF;
 END $$;
 
 -- Sample subscription data (optional - remove if not needed)
 DO $$
+DECLARE
+    user1_exists BOOLEAN := FALSE;
+    user2_exists BOOLEAN := FALSE;
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'users') THEN
-        IF (SELECT COUNT(*) FROM users) >= 2 THEN
+        -- Check if users 1 and 2 exist
+        SELECT EXISTS(SELECT 1 FROM users WHERE id = 1) INTO user1_exists;
+        SELECT EXISTS(SELECT 1 FROM users WHERE id = 2) INTO user2_exists;
+        
+        IF user1_exists THEN
             INSERT INTO subscriptions (user_id, plan, status, end_date) VALUES 
-            (1, 'premium', 'active', CURRENT_TIMESTAMP + INTERVAL '30 days'),
+            (1, 'premium', 'active', CURRENT_TIMESTAMP + INTERVAL '30 days')
+            ON CONFLICT DO NOTHING;
+        END IF;
+        
+        IF user2_exists THEN
+            INSERT INTO subscriptions (user_id, plan, status, end_date) VALUES 
             (2, 'free', 'active', NULL)
             ON CONFLICT DO NOTHING;
+        END IF;
+        
+        IF user1_exists OR user2_exists THEN
+            RAISE NOTICE 'Sample subscription data inserted';
+        ELSE
+            RAISE NOTICE 'Sample subscription data skipped - users 1 and 2 do not exist';
         END IF;
     END IF;
 END $$;
