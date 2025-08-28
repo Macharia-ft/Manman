@@ -33,26 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   let matchedProfiles = JSON.parse(localStorage.getItem(userStorageKey("matchedProfiles"))) || [];
   let activeSection = "all";
 
-  // Add a spinner element
-  const spinner = document.createElement('div');
-  spinner.className = 'spinner';
-  spinner.innerHTML = '<div class="loader"></div>';
-
-  // Function to show spinner
-  const showSpinner = () => {
-    if (container) container.appendChild(spinner);
-  };
-
-  // Function to hide spinner
-  const hideSpinner = () => {
-    if (container && container.contains(spinner)) {
-      container.removeChild(spinner);
-    }
-  };
-
   try {
-    showSpinner(); // Show spinner before fetching data
-
     const response = await fetch(`${config.API_BASE_URL}/api/user/profile-photo/${currentUserEmail}`, {
       method: "GET",
       headers: { Authorization: `Bearer ${token}` }
@@ -136,8 +117,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (container) {
       container.innerHTML = `<p>Error: ${error.message}</p>`;
     }
-  } finally {
-    hideSpinner(); // Hide spinner after data is fetched or an error occurs
   }
 
   filterButtons.forEach(btn => {
@@ -382,12 +361,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       } else if (activeSection === "matched") {
         actions.innerHTML = `
-          <button class="select-btn">Chat</button>
+          <button class="select-btn">Open Chat</button>
           <button class="remove-btn">Unmatch</button>
         `;
-        const chatButton = actions.querySelector(".select-btn");
-        if (chatButton) {
-          chatButton.addEventListener("click", async () => {
+        const openChatButton = actions.querySelector(".select-btn");
+        if (openChatButton) {
+          openChatButton.addEventListener("click", async () => {
             const subscription = await checkUserSubscription();
             if (subscription === 'free') {
               showPremiumNotification();
@@ -413,7 +392,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           restoreButton.addEventListener("click", () => {
             // Restore to original location
             const originalLocation = user.originalLocation || 'all';
-
+            
             if (originalLocation === 'selected') {
               selectedProfiles.push(user);
             } else if (originalLocation === 'selected-you') {
@@ -423,7 +402,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
               allProfiles.push(user);
             }
-
+            
             removedProfiles = removedProfiles.filter(u => u.id !== user.id);
             updateLocalStorage();
             renderProfiles();
