@@ -1,4 +1,3 @@
-
 -- Update database structure for proper user interaction handling
 
 -- First, let's make sure the user_interactions table has the right structure
@@ -29,8 +28,6 @@ CREATE INDEX IF NOT EXISTS idx_interactions_current_user ON user_interactions(cu
 CREATE INDEX IF NOT EXISTS idx_interactions_target_user ON user_interactions(target_user_id);
 CREATE INDEX IF NOT EXISTS idx_interactions_action ON user_interactions(action);
 CREATE INDEX IF NOT EXISTS idx_interactions_created_at ON user_interactions(created_at);
-
--- Update matches table indexes
 CREATE INDEX IF NOT EXISTS idx_matches_sender ON matches(sender_id);
 CREATE INDEX IF NOT EXISTS idx_matches_receiver ON matches(receiver_id);
 CREATE INDEX IF NOT EXISTS idx_matches_status ON matches(status);
@@ -68,5 +65,8 @@ UPDATE subscriptions SET status = 'active' WHERE status IS NULL;
 -- Add index for subscription queries
 CREATE INDEX IF NOT EXISTS idx_subscriptions_end_date ON subscriptions(end_date);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_start_date ON subscriptions(start_date);
+
+-- Ensure subscription column exists
+ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription VARCHAR(20) DEFAULT 'free';
 
 COMMIT;

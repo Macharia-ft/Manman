@@ -338,34 +338,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
       } else if (activeSection === "accepted") {
-        // Check if this is a mutual match
-        const isMutualMatch = user.isMutualMatch || false;
-
-        if (isMutualMatch) {
-          actions.innerHTML = `
-            <button class="select-btn matched-btn">Matched - Chat</button>
-            <button class="remove-btn">Cancel Match</button>
-          `;
-          const chatButton = actions.querySelector(".select-btn");
-          if (chatButton) {
-            chatButton.addEventListener("click", async () => {
-              const subscription = await checkUserSubscription();
-              if (subscription === 'free') {
-                showPremiumNotification();
-              } else {
-                // Move to matched section and open chat
-                matchedProfiles.push(user);
-                acceptedProfiles = acceptedProfiles.filter(u => u.id !== user.id);
-                updateLocalStorage();
-                window.location.href = `chat.html?userId=${user.id}`;
-              }
-            });
-          }
-        } else {
-          actions.innerHTML = `
-            <button class="select-btn disabled-btn" disabled>User Found Match</button>
-            <button class="remove-btn">Cancel Match</button>
-          `;
+        actions.innerHTML = `
+          <button class="select-btn matched-btn">Matched - Chat</button>
+          <button class="remove-btn">Cancel Match</button>
+        `;
+        
+        const chatButton = actions.querySelector(".select-btn");
+        if (chatButton) {
+          chatButton.addEventListener("click", async () => {
+            const subscription = await checkUserSubscription();
+            if (subscription === 'free') {
+              showPremiumNotification();
+            } else {
+              // Move to matched section and open chat
+              matchedProfiles.push(user);
+              acceptedProfiles = acceptedProfiles.filter(u => u.id !== user.id);
+              updateLocalStorage();
+              window.location.href = `chat.html?userId=${user.id}`;
+            }
+          });
         }
 
         const cancelMatchButton = actions.querySelector(".remove-btn");
