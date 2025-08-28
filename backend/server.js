@@ -279,48 +279,37 @@ app.get('/api/users/selected-you/:email', async (req, res) => {
     // Fetch the current user's ID
     const currentUserId = await getUserIdByEmail(currentUserEmail);
 
-    // Fetch users who selected the current user (corrected logic)
-    const { data, error } = await supabase
+    // Fetch users who selected the current user using corrected query
+    const { data: interactions, error } = await supabase
       .from('user_interactions')
-      .select('current_user_id, action')
+      .select(`
+        *,
+        selector_user:users!fk_current_user(*)
+      `)
       .eq('target_user_id', currentUserId)
-      .eq('action', 'selected');  // Only fetching selections
+      .eq('action', 'selected');
 
     if (error) {
       console.error("Error fetching user selections:", error);
-      throw new Error('Error fetching user interactions');
+      return res.status(500).json({ success: false, message: 'Error fetching user interactions' });
     }
 
-    // Extract the IDs of users who selected the current user
-    const selectorUserIds = data.map(interaction => interaction.current_user_id);
-
     // If no one selected the current user
-    if (selectorUserIds.length === 0) {
+    if (!interactions || interactions.length === 0) {
       return res.json([]);
     }
 
-    // Fetch the profiles of users who selected the current user
-    const { data: selectorUsers, error: userError } = await supabase
-      .from('users')
-      .select('*')
-      .in('id', selectorUserIds);
-
-    if (userError) {
-      console.error("Error fetching selector users:", userError);
-      throw new Error('Error fetching selector users');
-    }
-
-    // Add actions to the profiles
-    const selectorUsersWithActions = selectorUsers.map(user => {
-      const actionData = data.find(interaction => interaction.current_user_id === user.id);
-      return { ...user, action: actionData.action };
-    });
-
     // Return the users with actions and match score
     const currentUser = await getUserById(currentUserId);
-    const selectorUsersWithMatchScore = selectorUsersWithActions.map(user => {
+    const selectorUsersWithMatchScore = interactions.map(interaction => {
+      const user = interaction.selector_user;
       const matchScore = calculateMatchScore(user, currentUser);
-      return { ...user, matchScore };
+      return { 
+        ...user, 
+        action: interaction.action,
+        matchScore,
+        interactionId: interaction.id
+      };
     });
 
     // Sort users by match score in descending order
@@ -483,7 +472,7 @@ app.get('/api/users/interactions/:email', async (req, res) => {
       .from('user_interactions')
       .select(`
         *,
-        target_user:users(*)
+        target_user:users!fk_target_user(*)
       `)
       .eq('current_user_id', currentUserId);
 
