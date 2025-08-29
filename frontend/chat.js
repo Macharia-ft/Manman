@@ -268,8 +268,33 @@ async function loadMessages() {
     messagesContainer.innerHTML = '<div class="no-messages">Start your conversation here...</div>';
   }
 
+  // Mark messages as read when opening chat
+  await markMessagesAsRead();
+  
   // Auto-refresh messages every 3 seconds for real-time updates
   setTimeout(loadMessages, 3000);
+}
+
+// Function to mark messages as read
+async function markMessagesAsRead() {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    
+    const response = await fetch(`${config.API_BASE_URL}/api/messages/mark-read/${currentUserId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.ok) {
+      console.log('Messages marked as read');
+    }
+  } catch (error) {
+    console.error('Error marking messages as read:', error);
+  }
 }
 
 function getCurrentUserEmailFromToken() {

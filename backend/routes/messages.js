@@ -38,6 +38,38 @@ async function getUserIdByEmail(email) {
   return data.id;
 }
 
+// Mark messages as read when user opens chat
+router.post('/mark-read/:userId', verifyToken, async (req, res) => {
+  try {
+    const currentUserEmail = req.user.email;
+    const otherUserId = req.params.userId;
+    
+    // Get current user ID
+    const currentUserId = await getUserIdByEmail(currentUserEmail);
+    
+    // Mark all messages from the other user as read
+    const { error } = await supabase
+      .from('messages')
+      .update({ 
+        is_read: true,
+        read_at: new Date().toISOString()
+      })
+      .eq('sender_id', otherUserId)
+      .eq('receiver_id', currentUserId)
+      .eq('is_read', false);
+
+    if (error) {
+      console.error('Error marking messages as read:', error);
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+
+    res.json({ success: true, message: 'Messages marked as read' });
+  } catch (error) {
+    console.error('Mark read error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 // Send a message
 router.post("/send", verifyToken, async (req, res) => {
   try {
