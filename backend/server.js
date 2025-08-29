@@ -62,7 +62,20 @@ app.get("/api/admin/media-updates", async (req, res) => {
       return res.status(403).json({ success: false, message: "Admin access required" });
     }
 
-    res.json([]);
+    const { status = 'pending' } = req.query;
+
+    const { data, error } = await supabase
+      .from('pending_media_updates')
+      .select('*')
+      .eq('status', status)
+      .order('requested_at', { ascending: false });
+
+    if (error) {
+      console.error("Media updates fetch error:", error);
+      return res.status(500).json({ success: false, message: "Database error" });
+    }
+
+    res.json(data || []);
   } catch (error) {
     console.error("Media updates error:", error);
     res.status(500).json({ success: false, message: "Server error" });
@@ -81,7 +94,30 @@ app.get("/api/admin/media-updates/stats", async (req, res) => {
       return res.status(403).json({ success: false, message: "Admin access required" });
     }
 
-    res.json({ pending: 0, approved: 0, rejected: 0 });
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data: pending } = await supabase
+      .from('pending_media_updates')
+      .select('id')
+      .eq('status', 'pending');
+
+    const { data: approved } = await supabase
+      .from('pending_media_updates')
+      .select('id')
+      .eq('status', 'approved')
+      .gte('reviewed_at', today);
+
+    const { data: rejected } = await supabase
+      .from('pending_media_updates')
+      .select('id')
+      .eq('status', 'rejected')
+      .gte('reviewed_at', today);
+
+    res.json({
+      pending: pending?.length || 0,
+      approved: approved?.length || 0,
+      rejected: rejected?.length || 0
+    });
   } catch (error) {
     console.error("Media stats error:", error);
     res.status(500).json({ success: false, message: "Server error" });
@@ -100,7 +136,20 @@ app.get("/api/admin/premium-approvals", async (req, res) => {
       return res.status(403).json({ success: false, message: "Admin access required" });
     }
 
-    res.json([]);
+    const { status = 'pending' } = req.query;
+
+    const { data, error } = await supabase
+      .from('pending_premium_subscriptions')
+      .select('*')
+      .eq('status', status)
+      .order('requested_at', { ascending: false });
+
+    if (error) {
+      console.error("Premium approvals fetch error:", error);
+      return res.status(500).json({ success: false, message: "Database error" });
+    }
+
+    res.json(data || []);
   } catch (error) {
     console.error("Premium approvals error:", error);
     res.status(500).json({ success: false, message: "Server error" });
