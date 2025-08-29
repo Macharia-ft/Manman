@@ -191,7 +191,7 @@ body {
 }
 
 /* Desktop: Two columns */
-@media (min-width: 769px) {
+@media (min-width: 600px) {
   .profiles-list {
     grid-template-columns: repeat(2, 1fr);
   }
