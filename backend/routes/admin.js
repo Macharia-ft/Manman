@@ -316,10 +316,14 @@ router.post("/premium-subscriptions/review", authenticateAdmin, async (req, res)
             .from('subscriptions')
             .insert({
               user_id: user.id,
+              user_email: subscription.user_email,
               plan: 'premium',
               status: 'active',
               start_date: new Date().toISOString(),
-              end_date: endDate.toISOString()
+              end_date: endDate.toISOString(),
+              amount_paid: subscription.amount,
+              currency: subscription.currency,
+              payment_method: subscription.payment_method
             });
 
           // Update user's subscription status

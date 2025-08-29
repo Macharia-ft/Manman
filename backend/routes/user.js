@@ -76,7 +76,17 @@ router.get("/subscription-status", async (req, res) => {
       .single();
 
     if (subscription) {
-      res.json({ subscription: subscription.plan });
+      const planType = subscription.plan === 'premium' || 
+                      subscription.plan === 'weekly' || 
+                      subscription.plan === 'monthly' || 
+                      subscription.plan === 'yearly' ? 'premium' : 'free';
+      
+      await supabase
+        .from('users')
+        .update({ subscription: planType })
+        .eq('id', user.id);
+      
+      res.json({ subscription: planType });
     } else {
       // Update user subscription to free if no active subscription found
       await supabase

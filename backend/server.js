@@ -291,8 +291,8 @@ app.get('/api/users/:email', async (req, res) => {
         adjustMessage += `Try adjusting your preferred gender (currently: ${currentUser.pref_gender}). `;
       }
 
-      if (currentUser.pref_county_of_residence) {
-        adjustMessage += `Try adjusting your preferred county (currently: ${currentUser.pref_county_of_residence}). `;
+      if (currentUser.pref_country_of_residence) {
+        adjustMessage += `Try adjusting your preferred county (currently: ${currentUser.pref_country_of_residence}). `;
       }
 
       if (currentUser.pref_age_min && currentUser.pref_age_max) {
@@ -933,19 +933,24 @@ app.get("/api/user/subscription-status", async (req, res) => {
 
     if (activeSubscription) {
       // Update users table with current subscription status
+      const planType = activeSubscription.plan === 'premium' || 
+                      activeSubscription.plan === 'weekly' || 
+                      activeSubscription.plan === 'monthly' || 
+                      activeSubscription.plan === 'yearly' ? 'premium' : 'free';
+
       await supabase
         .from('users')
-        .update({ subscription: activeSubscription.plan })
+        .update({ subscription: planType })
         .eq('id', user.id);
-      
-      res.json({ subscription: activeSubscription.plan });
+
+      res.json({ subscription: planType });
     } else {
       // Update users table to free if no active subscription
       await supabase
         .from('users')
         .update({ subscription: 'free' })
         .eq('id', user.id);
-      
+
       res.json({ subscription: 'free' });
     }
   } catch (error) {
@@ -960,7 +965,7 @@ app.post("/api/users/mutual-match", async (req, res) => {
     const token = req.headers.authorization?.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const currentUserEmail = decoded.email;
-    const { targetUserId, action, originalLocation } = req.body;
+    const { targetUserId, originalLocation } = req.body;
 
     // Get current user ID
     const currentUserId = await getUserIdByEmail(currentUserEmail);
@@ -1415,7 +1420,7 @@ app.get('/api/user', async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Filter out sensitive information like email, password, and ID numbers
+    // Filter out sensitive information like email, password and ID numbers
     const { password, email, national_id_number, id_front_url, id_back_url, liveness_video_url, ...publicData } = data;
 
     // Return public data (exclude sensitive information)

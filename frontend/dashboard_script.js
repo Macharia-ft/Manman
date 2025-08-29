@@ -1,4 +1,3 @@
-
 // JWT decode functionality
 function decodeJWT(token) {
   try {
@@ -134,7 +133,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (selectedYouResponse.ok) {
       let rawSelectedYouProfiles = await selectedYouResponse.json();
-      
+
       // Remove profiles that are already in accepted section
       const acceptedUserIds = acceptedProfiles.map(u => u.id);
       selectedYouProfiles = rawSelectedYouProfiles
@@ -143,6 +142,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
       console.error("Error fetching selected-you profiles.");
     }
+
+    // Fetch match scores for all profiles
+    const matchScoresResponse = await fetch(`${config.API_BASE_URL}/api/users/match-scores/${currentUserEmail}`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    let matchScores = {};
+    if (matchScoresResponse.ok) {
+      matchScores = await matchScoresResponse.json();
+    }
+
+    // Assign match scores to profiles
+    allProfiles = allProfiles.map(profile => ({
+      ...profile,
+      matchScore: matchScores[profile.id] || 0 // Default to 0 if no score
+    }));
+    selectedProfiles = selectedProfiles.map(profile => ({
+      ...profile,
+      matchScore: matchScores[profile.id] || 0
+    }));
+    selectedYouProfiles = selectedYouProfiles.map(profile => ({
+      ...profile,
+      matchScore: matchScores[profile.id] || 0
+    }));
+    acceptedProfiles = acceptedProfiles.map(profile => ({
+      ...profile,
+      matchScore: matchScores[profile.id] || 0
+    }));
+
 
     // Hide spinner and show content
     if (loadingSpinner) loadingSpinner.style.display = 'none';
@@ -242,7 +271,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (selectButton.disabled) return;
             selectButton.disabled = true;
             selectButton.textContent = 'Processing...';
-            
+
             try {
               await moveProfile(user, 'all', 'selected', 'selected');
             } finally {
@@ -291,7 +320,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (acceptButton.disabled) return;
             acceptButton.disabled = true;
             acceptButton.textContent = 'Processing...';
-            
+
             try {
               await createMutualMatch(user, 'selected-you', 'accepted', 'accepted');
             } finally {
@@ -320,7 +349,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (matchedButton.disabled) return;
             matchedButton.disabled = true;
             matchedButton.textContent = 'Loading...';
-            
+
             try {
               const subscription = await checkUserSubscription();
               if (subscription === 'free') {
