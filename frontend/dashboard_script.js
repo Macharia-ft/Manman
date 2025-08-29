@@ -235,7 +235,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (activeSection === "all") {
         actions.innerHTML = `
           <button class="select-btn" ${foundMatch ? 'disabled' : ''}>
-            ${foundMatch ? 'User Found Match' : 'Select'}
+            ${foundMatch ? 'Found Match' : 'Select'}
           </button>
           <button class="remove-btn">Remove</button>
         `;
@@ -265,12 +265,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       } else if (activeSection === "selected") {
         actions.innerHTML = `
-          <button class="select-btn">Cancel Selection</button>
+          <button class="select-btn" ${foundMatch ? 'disabled' : ''}>
+            ${foundMatch ? 'Found Match' : 'Cancel Selection'}
+          </button>
           <button class="remove-btn">Remove</button>
         `;
 
         const cancelButton = actions.querySelector(".select-btn");
-        if (cancelButton) {
+        if (cancelButton && !foundMatch) {
           cancelButton.addEventListener("click", async () => {
             await moveProfile(user, 'selected', user.originalLocation || 'all', null);
           });
@@ -314,12 +316,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       } else if (activeSection === "accepted") {
         actions.innerHTML = `
-          <button class="match-btn">Matched</button>
+          <button class="match-btn" ${foundMatch ? 'disabled' : ''}>
+            ${foundMatch ? 'Found Match' : 'Matched'}
+          </button>
           <button class="remove-btn">Cancel Match</button>
         `;
 
         const matchedButton = actions.querySelector(".match-btn");
-        if (matchedButton) {
+        if (matchedButton && !foundMatch) {
           matchedButton.addEventListener("click", async (event) => {
             if (matchedButton.disabled) return;
             matchedButton.disabled = true;

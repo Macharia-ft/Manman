@@ -1,6 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const adminController = require("../controllers/adminController");
+const { createClient } = require("@supabase/supabase-js");
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Admin login
 router.post('/login', async (req, res) => {
