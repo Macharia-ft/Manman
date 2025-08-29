@@ -39,8 +39,7 @@ require("dotenv").config();
         .from('admins')
         .insert({
           email: email,
-          password_hash: hashed,
-          name: 'Admin'
+          password_hash: hashed
         });
 
       if (error) {

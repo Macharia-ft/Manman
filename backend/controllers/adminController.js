@@ -60,7 +60,7 @@ exports.adminLogin = async (req, res) => {
     res.json({
       success: true,
       token,
-      admin: { email: data.email, name: data.name }
+      admin: { email: data.email }
     });
   } catch (err) {
     console.error("Admin login error:", err.message);
