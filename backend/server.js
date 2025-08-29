@@ -840,9 +840,9 @@ app.post("/api/users/mutual-match", async (req, res) => {
 app.get('/api/user', async (req, res) => {
   try {
     const { email, id } = req.query;
-    
+
     let query = supabase.from('users').select('*');
-    
+
     if (email) {
       query = query.eq('email', email);
     } else if (id) {
@@ -850,13 +850,13 @@ app.get('/api/user', async (req, res) => {
     } else {
       return res.status(400).json({ error: 'Email or ID parameter required' });
     }
-    
+
     const { data, error } = await query.single();
-    
+
     if (error) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
+
     res.json(data);
   } catch (error) {
     console.error('Error fetching user:', error);
@@ -879,8 +879,7 @@ app.post('/api/payment/mpesa/verify', upload.single('payment_proof'), async (req
     }
 
     // Upload proof to Cloudinary
-    const uploadToCloudinary = require('./controllers/userController').uploadToCloudinary;
-    const proofUpload = await uploadToCloudinary(proofFile.path, 'payment_proofs', proofFile.mimetype);
+    const proofUpload = await userController.uploadToCloudinary(proofFile.path, 'payment_proofs', proofFile.mimetype);
 
     // Store in pending subscriptions
     const { error } = await supabase
@@ -930,8 +929,7 @@ app.post('/api/payment/crypto/verify', upload.single('transaction_proof'), async
     }
 
     // Upload proof to Cloudinary
-    const uploadToCloudinary = require('./controllers/userController').uploadToCloudinary;
-    const proofUpload = await uploadToCloudinary(proofFile.path, 'payment_proofs', proofFile.mimetype);
+    const proofUpload = await userController.uploadToCloudinary(proofFile.path, 'payment_proofs', proofFile.mimetype);
 
     // Store in pending subscriptions
     const { error } = await supabase

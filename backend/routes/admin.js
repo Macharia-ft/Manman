@@ -11,9 +11,15 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 // Admin authentication middleware
 const authenticateAdmin = (req, res, next) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
+    const authHeader = req.headers.authorization;
     
-    if (!token) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: "Missing or invalid token format" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    
+    if (!token || token === 'null' || token === 'undefined') {
       return res.status(401).json({ success: false, message: "Missing token" });
     }
 
@@ -198,6 +204,147 @@ router.get("/premium-approvals/stats", authenticateAdmin, async (req, res) => {
   } catch (error) {
     console.error("Premium stats error:", error);
     res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Media updates endpoints
+router.get("/media-updates", authenticateAdmin, async (req, res) => {
+  try {
+    const { status = 'pending' } = req.query;
+
+    const { data, error } = await supabase
+      .from('pending_media_updates')
+      .select('*')
+      .eq('status', status)
+      .order('requested_at', { ascending: false });
+
+    if (error) throw error;
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching media updates:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.post("/media-updates/review", authenticateAdmin, async (req, res) => {
+  try {
+    const { updateId, status, adminMessage } = req.body;
+
+    if (status === 'approved') {
+      // Get the pending update
+      const { data: update } = await supabase
+        .from('pending_media_updates')
+        .select('*')
+        .eq('id', updateId)
+        .single();
+
+      if (update) {
+        // Update user's actual media URLs
+        const updateData = {};
+        if (update.pending_photo_url) updateData.profile_photo_url = update.pending_photo_url;
+        if (update.pending_video_url) updateData.profile_video_url = update.pending_video_url;
+
+        await supabase
+          .from('users')
+          .update(updateData)
+          .eq('email', update.user_email);
+      }
+    }
+
+    // Update the pending update status
+    await supabase
+      .from('pending_media_updates')
+      .update({
+        status,
+        admin_message: adminMessage,
+        reviewed_at: new Date().toISOString()
+      })
+      .eq('id', updateId);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error reviewing media update:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Premium subscriptions endpoints
+router.get("/premium-subscriptions", authenticateAdmin, async (req, res) => {
+  try {
+    const { status = 'pending' } = req.query;
+
+    const { data, error } = await supabase
+      .from('pending_premium_subscriptions')
+      .select('*')
+      .eq('status', status)
+      .order('requested_at', { ascending: false });
+
+    if (error) throw error;
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching premium subscriptions:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.post("/premium-subscriptions/review", authenticateAdmin, async (req, res) => {
+  try {
+    const { subscriptionId, status, adminMessage } = req.body;
+
+    if (status === 'approved') {
+      // Get the pending subscription
+      const { data: subscription } = await supabase
+        .from('pending_premium_subscriptions')
+        .select('*')
+        .eq('id', subscriptionId)
+        .single();
+
+      if (subscription) {
+        // Find the user by email
+        const { data: user } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', subscription.user_email)
+          .single();
+
+        if (user) {
+          // Create active subscription
+          const endDate = new Date();
+          endDate.setDate(endDate.getDate() + 30); // 30 days
+
+          await supabase
+            .from('subscriptions')
+            .insert({
+              user_id: user.id,
+              plan: 'premium',
+              status: 'active',
+              start_date: new Date().toISOString(),
+              end_date: endDate.toISOString()
+            });
+
+          // Update user's subscription status
+          await supabase
+            .from('users')
+            .update({ subscription: 'premium' })
+            .eq('id', user.id);
+        }
+      }
+    }
+
+    // Update the pending subscription status
+    await supabase
+      .from('pending_premium_subscriptions')
+      .update({
+        status,
+        admin_message: adminMessage,
+        reviewed_at: new Date().toISOString()
+      })
+      .eq('id', subscriptionId);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error reviewing subscription:', error);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 

@@ -1,10 +1,9 @@
-
 let selectedPlan = null;
 let selectedPaymentMethod = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   const token = localStorage.getItem("token");
-  
+
   if (!token) {
     window.location.href = "login.html";
     return;
@@ -20,7 +19,7 @@ async function loadCurrentSubscription() {
     const response = await fetch(`${config.API_BASE_URL}/api/user/subscription`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    
+
     if (response.ok) {
       const subscription = await response.json();
       updateUIForCurrentPlan(subscription);
@@ -41,11 +40,11 @@ function updateUIForCurrentPlan(subscription) {
   // Update current plan
   const currentPlan = subscription.plan || 'free';
   const planCards = document.querySelectorAll('.pricing-card');
-  
+
   planCards.forEach((card, index) => {
     const btn = card.querySelector('.subscribe-btn');
     const planNames = ['free', 'weekly', 'monthly', 'yearly'];
-    
+
     if (planNames[index] === currentPlan) {
       btn.textContent = 'Current Plan';
       btn.className = 'subscribe-btn current-plan';
@@ -56,23 +55,23 @@ function updateUIForCurrentPlan(subscription) {
 
 function selectPlan(plan, price) {
   selectedPlan = { plan, price };
-  
+
   if (!selectedPaymentMethod) {
     alert('Please select a payment method first.');
     return;
   }
-  
+
   openPaymentModal();
 }
 
 function selectPaymentMethod(method) {
   selectedPaymentMethod = method;
-  
+
   // Update UI to show selected payment method
   document.querySelectorAll('.payment-option').forEach(option => {
     option.classList.remove('selected');
   });
-  
+
   event.target.closest('.payment-option').classList.add('selected');
 }
 
@@ -81,13 +80,13 @@ function openPaymentModal() {
     alert('Please select both a plan and payment method.');
     return;
   }
-  
+
   const modal = document.getElementById('paymentModal');
   const modalTitle = document.getElementById('modalTitle');
   const modalBody = document.getElementById('modalBody');
-  
+
   modalTitle.textContent = `${selectedPlan.plan.charAt(0).toUpperCase() + selectedPlan.plan.slice(1)} Plan - $${selectedPlan.price}`;
-  
+
   switch (selectedPaymentMethod) {
     case 'paypal':
       modalBody.innerHTML = createPayPalForm();
@@ -99,7 +98,7 @@ function openPaymentModal() {
       modalBody.innerHTML = createCryptoForm();
       break;
   }
-  
+
   modal.style.display = 'flex';
 }
 
@@ -203,7 +202,7 @@ function createCryptoForm() {
 async function processPayPalPayment() {
   const spinner = document.getElementById('paypalSpinner');
   spinner.style.display = 'inline-block';
-  
+
   try {
     const token = localStorage.getItem("token");
     const response = await fetch(`${config.API_BASE_URL}/api/payment/paypal/create`, {
@@ -217,7 +216,7 @@ async function processPayPalPayment() {
         amount: selectedPlan.price
       })
     });
-    
+
     if (response.ok) {
       const data = await response.json();
       window.location.href = data.approval_url;
@@ -237,14 +236,14 @@ async function processMpesaPayment() {
   const phoneNumber = document.getElementById('mpesaPhone').value.trim();
   const proofFile = document.getElementById('mpesaProof').files[0];
   const spinner = document.getElementById('mpesaSpinner');
-  
+
   if (!transactionId || !phoneNumber || !proofFile) {
     alert('Please fill in all fields and upload payment proof.');
     return;
   }
-  
+
   spinner.style.display = 'inline-block';
-  
+
   try {
     const formData = new FormData();
     formData.append('plan', selectedPlan.plan);
@@ -252,7 +251,7 @@ async function processMpesaPayment() {
     formData.append('transaction_id', transactionId);
     formData.append('phone_number', phoneNumber);
     formData.append('payment_proof', proofFile);
-    
+
     const token = localStorage.getItem("token");
     const response = await fetch(`${config.API_BASE_URL}/api/payment/mpesa/verify`, {
       method: 'POST',
@@ -261,14 +260,21 @@ async function processMpesaPayment() {
       },
       body: formData
     });
-    
+
+    let result;
+    try {
+      result = await response.json();
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      throw new Error('Server returned invalid response');
+    }
+
     if (response.ok) {
       showPaymentSubmittedNotification('M-Pesa payment submitted successfully! Admin will review and approve within 24 hours.');
       closePaymentModal();
       setTimeout(() => loadCurrentSubscription(), 1000);
     } else {
-      const errorData = await response.json();
-      alert('Payment submission failed: ' + (errorData.message || 'Please check your transaction details and try again.'));
+      alert('Payment submission failed: ' + (result.message || 'Please check your transaction details and try again.'));
     }
   } catch (error) {
     console.error('M-Pesa payment error:', error);
@@ -283,14 +289,14 @@ async function processCryptoPayment() {
   const transactionId = document.getElementById('cryptoTransactionId').value.trim();
   const proofFile = document.getElementById('cryptoProof').files[0];
   const spinner = document.getElementById('cryptoSpinner');
-  
+
   if (!cryptoType || !transactionId || !proofFile) {
     alert('Please fill in all fields and upload transaction proof.');
     return;
   }
-  
+
   spinner.style.display = 'inline-block';
-  
+
   try {
     const formData = new FormData();
     formData.append('plan', selectedPlan.plan);
@@ -298,7 +304,7 @@ async function processCryptoPayment() {
     formData.append('crypto_type', cryptoType);
     formData.append('transaction_id', transactionId);
     formData.append('transaction_proof', proofFile);
-    
+
     const token = localStorage.getItem("token");
     const response = await fetch(`${config.API_BASE_URL}/api/payment/crypto/verify`, {
       method: 'POST',
@@ -307,14 +313,21 @@ async function processCryptoPayment() {
       },
       body: formData
     });
-    
+
+    let result;
+    try {
+      result = await response.json();
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      throw new Error('Server returned invalid response');
+    }
+
     if (response.ok) {
       showPaymentSubmittedNotification('Crypto payment submitted successfully! Admin will review and approve within 24 hours.');
       closePaymentModal();
       setTimeout(() => loadCurrentSubscription(), 1000);
     } else {
-      const errorData = await response.json();
-      alert('Payment submission failed: ' + (errorData.message || 'Please check your transaction details and try again.'));
+      alert('Payment submission failed: ' + (result.message || 'Please check your transaction details and try again.'));
     }
   } catch (error) {
     console.error('Crypto payment error:', error);
@@ -362,7 +375,7 @@ async function checkPendingPayments() {
     const response = await fetch(`${config.API_BASE_URL}/api/user/payment-status`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    
+
     if (response.ok) {
       const data = await response.json();
       if (data.pending && data.admin_message) {
