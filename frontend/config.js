@@ -1,5 +1,3 @@
 const config = {
-  API_BASE_URL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? "http://localhost:5000"
-    : `${window.location.protocol}//${window.location.host}`
+  API_BASE_URL:"https://potential-waffle-x5qqr9p67jwwcx4v-5000.app.github.dev"
 };
