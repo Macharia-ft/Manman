@@ -186,8 +186,15 @@ body {
 /* Profile Cards */
 .profiles-list {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
   gap: 12px;
+}
+
+/* Desktop: Two columns */
+@media (min-width: 769px) {
+  .profiles-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 .profile-card {
   background-color: white;
