@@ -1,22 +1,60 @@
 const bcrypt = require("bcrypt");
-const { Pool } = require("pg");
+const { createClient } = require("@supabase/supabase-js");
 require("dotenv").config();
 
 (async () => {
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
-  });
+  try {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseAnonKey = process.env.ANON_KEY;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-  const email = "takeyours001@gmail.com";
-  const password = "0768012671is";
-  const hashed = await bcrypt.hash(password, 10);
+    const email = "admin@takeyours.com";
+    const password = "admin123";
+    const hashed = await bcrypt.hash(password, 10);
 
-  await pool.query(
-    "INSERT INTO admins (email, password_hash) VALUES ($1, $2)",
-    [email, hashed]
-  );
+    // Check if admin already exists
+    const { data: existingAdmin } = await supabase
+      .from('admins')
+      .select('*')
+      .eq('email', email)
+      .single();
 
-  console.log("✅ Admin created successfully.");
+    if (existingAdmin) {
+      console.log("⚠️ Admin already exists with email:", email);
+      
+      // Update password if admin exists
+      const { error } = await supabase
+        .from('admins')
+        .update({ password_hash: hashed })
+        .eq('email', email);
+
+      if (error) {
+        console.error("❌ Error updating admin:", error.message);
+      } else {
+        console.log("✅ Admin password updated successfully.");
+      }
+    } else {
+      // Create new admin
+      const { data, error } = await supabase
+        .from('admins')
+        .insert({
+          email: email,
+          password_hash: hashed,
+          name: 'Admin'
+        });
+
+      if (error) {
+        console.error("❌ Error creating admin:", error.message);
+      } else {
+        console.log("✅ Admin created successfully.");
+        console.log("📧 Email:", email);
+        console.log("🔑 Password:", password);
+      }
+    }
+
+  } catch (error) {
+    console.error("❌ Script error:", error.message);
+  }
+  
   process.exit();
 })();

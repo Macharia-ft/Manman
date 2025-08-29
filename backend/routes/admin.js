@@ -10,19 +10,19 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 // Admin login
 router.post('/login', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!username || !password) {
-      return res.status(400).json({ message: 'Username and password are required' });
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
     }
 
-    console.log('Admin login attempt:', username);
+    console.log('Admin login attempt:', email);
 
     // Query admin from Supabase
     const { data, error } = await supabase
       .from('admins')
       .select('*')
-      .eq('username', username)
+      .eq('email', email)
       .single();
 
     if (error) {
@@ -31,31 +31,31 @@ router.post('/login', async (req, res) => {
     }
 
     if (!data) {
-      console.log('No admin found with username:', username);
+      console.log('No admin found with email:', email);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     // Verify password
     const bcrypt = require('bcrypt');
-    const isValid = await bcrypt.compare(password, data.password);
+    const isValid = await bcrypt.compare(password, data.password_hash);
     if (!isValid) {
-      console.log('Invalid password for admin:', username);
+      console.log('Invalid password for admin:', email);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     // Generate JWT token
     const jwt = require('jsonwebtoken');
     const token = jwt.sign(
-      { id: data.id, username: data.username, role: 'admin' },
+      { id: data.id, email: data.email, role: 'admin' },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
 
-    console.log('Admin login successful:', username);
+    console.log('Admin login successful:', email);
     res.json({ 
       message: 'Login successful',
       token,
-      admin: { id: data.id, username: data.username }
+      admin: { id: data.id, email: data.email }
     });
 
   } catch (error) {
