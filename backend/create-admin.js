@@ -8,8 +8,8 @@ require("dotenv").config();
     const supabaseAnonKey = process.env.ANON_KEY;
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-    const email = "admin@takeyours.com";
-    const password = "admin123";
+    const email = "takeyours001@gmail.com";
+    const password = "0768012671";
     const hashed = await bcrypt.hash(password, 10);
 
     // Check if admin already exists
