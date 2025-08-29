@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const userData = await res.json();
       populateForm(userData);
       loadCurrentMedia(userData);
+      checkMediaUpdateCooldown(userData);
     }
 
     spinnerOverlay.style.display = "none";
@@ -95,6 +96,102 @@ function loadCurrentMedia(userData) {
       }
     });
   }
+}
+
+function checkMediaUpdateCooldown(userData) {
+  const updateNotice = document.getElementById("updateNotice");
+  const mediaButton = document.querySelector('button[onclick="updateMedia()"]');
+  const isPremium = userData.subscription === 'premium';
+  
+  // Check if there's a last media update timestamp
+  const lastUpdateDate = userData.last_media_update ? new Date(userData.last_media_update) : null;
+  const now = new Date();
+  
+  if (lastUpdateDate) {
+    const daysSinceUpdate = Math.floor((now - lastUpdateDate) / (1000 * 60 * 60 * 24));
+    const cooldownPeriod = isPremium ? 7 : 30; // Premium: 7 days, Free: 30 days
+    const daysRemaining = cooldownPeriod - daysSinceUpdate;
+    
+    if (daysRemaining > 0) {
+      // User is still in cooldown period
+      updateNotice.innerHTML = `
+        <strong>Media Update Cooldown:</strong> You can update your media again in <span id="cooldownCounter">${daysRemaining}</span> days. 
+        ${isPremium ? 'Premium users can update every week.' : 'Free users can update once per month.'} 
+        You can still update preferences anytime.
+      `;
+      updateNotice.style.backgroundColor = '#ffebee';
+      updateNotice.style.borderColor = '#f44336';
+      
+      // Disable media update button
+      if (mediaButton) {
+        mediaButton.disabled = true;
+        mediaButton.style.opacity = '0.5';
+        mediaButton.style.cursor = 'not-allowed';
+      }
+      
+      // Start countdown timer
+      startCooldownTimer(daysRemaining);
+      return;
+    }
+  }
+  
+  // User can update media
+  updateNotice.innerHTML = `
+    <strong>Media Updates:</strong> ${isPremium ? 'Premium users can update media once per week.' : 'Free users can update media once per month.'} 
+    Updates require admin approval. You can update preferences anytime.
+  `;
+  updateNotice.style.backgroundColor = '#e8f5e8';
+  updateNotice.style.borderColor = '#4caf50';
+  
+  // Enable media update button
+  if (mediaButton) {
+    mediaButton.disabled = false;
+    mediaButton.style.opacity = '1';
+    mediaButton.style.cursor = 'pointer';
+  }
+}
+
+function startCooldownTimer(daysRemaining) {
+  const counter = document.getElementById('cooldownCounter');
+  if (!counter) return;
+  
+  // Update countdown every hour
+  const interval = setInterval(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      clearInterval(interval);
+      return;
+    }
+    
+    // Recalculate remaining time
+    fetch(`${config.API_BASE_URL}/api/user/current-preferences`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(res => res.json())
+    .then(userData => {
+      const lastUpdateDate = userData.last_media_update ? new Date(userData.last_media_update) : null;
+      const now = new Date();
+      const isPremium = userData.subscription === 'premium';
+      const cooldownPeriod = isPremium ? 7 : 30;
+      
+      if (lastUpdateDate) {
+        const daysSinceUpdate = Math.floor((now - lastUpdateDate) / (1000 * 60 * 60 * 24));
+        const daysRemaining = cooldownPeriod - daysSinceUpdate;
+        
+        if (daysRemaining <= 0) {
+          // Cooldown ended, refresh the page
+          clearInterval(interval);
+          location.reload();
+        } else {
+          // Update counter
+          counter.textContent = daysRemaining;
+        }
+      }
+    })
+    .catch(err => {
+      console.error('Error updating cooldown:', err);
+    });
+  }, 3600000); // Update every hour
 }
 
 function openFullscreen(src, type) {
@@ -215,7 +312,19 @@ async function updateMedia() {
 
     if (response.ok && result.success) {
       alert("✅ Media update request submitted successfully! Admin will review and approve your changes within 24 hours.");
-      // Don't reload as changes are pending approval
+      
+      // Update the last media update timestamp in the database
+      await fetch(`${config.API_BASE_URL}/api/user/set-media-update-timestamp`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ timestamp: new Date().toISOString() })
+      });
+      
+      // Refresh the page to show new cooldown
+      location.reload();
     } else {
       alert("❌ " + (result.message || "Error updating media."));
     }

@@ -967,6 +967,12 @@ module.exports = {
         });
       }
 
+      // Update the user's last_media_update timestamp
+      await supabase
+        .from('users')
+        .update({ last_media_update: new Date().toISOString() })
+        .eq('email', userEmail);
+
       console.log("✅ Media update request submitted for:", userEmail);
       res.status(200).json({
         success: true,
@@ -979,6 +985,42 @@ module.exports = {
         success: false,
         message: "Server error during media update"
       });
+    }
+  },
+
+  setMediaUpdateTimestamp: async (req, res) => {
+    console.log("📦 Incoming /api/user/set-media-update-timestamp request...");
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ success: false, message: "Missing token" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    let decoded;
+
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ success: false, message: "Invalid token" });
+    }
+
+    const userEmail = decoded.email;
+    const { timestamp } = req.body;
+
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ last_media_update: timestamp })
+        .eq('email', userEmail);
+
+      if (error) {
+        return res.status(500).json({ success: false, message: error.message });
+      }
+
+      res.status(200).json({ success: true, message: "Timestamp updated" });
+    } catch (error) {
+      res.status(500).json({ success: false, message: "Server error" });
     }
   },
 

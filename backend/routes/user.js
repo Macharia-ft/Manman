@@ -11,7 +11,9 @@ const {
   savePreferences,
   getCurrentPreferences,
   updatePreferences,
-  getUserProfilePhoto
+  getUserProfilePhoto,
+  updateMedia, // Assuming updateMedia is also in userController
+  setMediaUpdateTimestamp // Assuming this controller function will be added
 } = require("../controllers/userController");
 
 // Configure multer for personal info files
@@ -35,14 +37,18 @@ router.get("/profile-photo/:email", getUserProfilePhoto);
 router.post("/update-media", personalUpload.fields([
   { name: 'profilePhoto', maxCount: 1 },
   { name: 'profileVideo', maxCount: 1 }
-]), require("../controllers/userController").updateMedia);
+]), updateMedia);
+
+// Add route for media update timestamp
+router.put("/set-media-update-timestamp", setMediaUpdateTimestamp);
+
 
 // Add subscription status endpoint
 router.get("/subscription-status", async (req, res) => {
   try {
     const jwt = require("jsonwebtoken");
     const { createClient } = require("@supabase/supabase-js");
-    
+
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseAnonKey = process.env.ANON_KEY;
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -76,16 +82,16 @@ router.get("/subscription-status", async (req, res) => {
       .single();
 
     if (subscription) {
-      const planType = subscription.plan === 'premium' || 
-                      subscription.plan === 'weekly' || 
-                      subscription.plan === 'monthly' || 
+      const planType = subscription.plan === 'premium' ||
+                      subscription.plan === 'weekly' ||
+                      subscription.plan === 'monthly' ||
                       subscription.plan === 'yearly' ? 'premium' : 'free';
-      
+
       await supabase
         .from('users')
         .update({ subscription: planType })
         .eq('id', user.id);
-      
+
       res.json({ subscription: planType });
     } else {
       // Update user subscription to free if no active subscription found
@@ -93,7 +99,7 @@ router.get("/subscription-status", async (req, res) => {
         .from('users')
         .update({ subscription: 'free' })
         .eq('id', user.id);
-      
+
       res.json({ subscription: 'free' });
     }
   } catch (error) {
@@ -107,7 +113,7 @@ router.get("/conversations", async (req, res) => {
   try {
     const jwt = require("jsonwebtoken");
     const { createClient } = require("@supabase/supabase-js");
-    
+
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseAnonKey = process.env.ANON_KEY;
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -161,7 +167,7 @@ router.get("/conversations", async (req, res) => {
 
       if (!reverseError && reverseMatch) {
         const user = match.users;
-        
+
         // Get last message and unread count for this conversation
         const { data: messages, error: msgError } = await supabase
           .from('messages')
@@ -206,7 +212,7 @@ router.get("/payment-status", async (req, res) => {
   try {
     const jwt = require("jsonwebtoken");
     const { createClient } = require("@supabase/supabase-js");
-    
+
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseAnonKey = process.env.ANON_KEY;
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -249,7 +255,7 @@ router.post("/clear-message", async (req, res) => {
   try {
     const jwt = require("jsonwebtoken");
     const { createClient } = require("@supabase/supabase-js");
-    
+
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseAnonKey = process.env.ANON_KEY;
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
