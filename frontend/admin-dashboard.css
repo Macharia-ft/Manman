@@ -58,3 +58,44 @@ body {
 .premium-btn {
   background-color: #ff6b35;
 }
+
+.admin-action-btn:hover {
+  background-color: #0056b3;
+}
+
+.status-badge, .subscription-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.status-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-approved {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-disapproved {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.subscription-free {
+  background: #e9ecef;
+  color: #495057;
+}
+
+.subscription-premium {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.admin-table {
+  margin: 20px;
+}

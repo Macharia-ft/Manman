@@ -103,4 +103,102 @@ router.post("/grant-premium", authenticateAdmin, adminController.grantPremiumAcc
 // Remove premium access from a user (admin only)
 router.post("/remove-premium", authenticateAdmin, adminController.removePremiumAccess);
 
+// Dashboard stats endpoint
+router.get("/dashboard-stats", authenticateAdmin, async (req, res) => {
+  try {
+    // Get total users
+    const { data: users, error: usersError } = await supabase
+      .from('users')
+      .select('subscription');
+
+    if (usersError) {
+      console.error("Users query error:", usersError);
+      return res.status(500).json({ success: false, message: "Server error" });
+    }
+
+    const totalUsers = users.length;
+    const activePremium = users.filter(user => user.subscription === 'premium').length;
+
+    // Get pending media updates
+    const { data: mediaUpdates, error: mediaError } = await supabase
+      .from('pending_media_updates')
+      .select('*')
+      .eq('status', 'pending');
+
+    const pendingMedia = mediaError ? 0 : mediaUpdates.length;
+
+    // Get pending premium approvals
+    const { data: premiumApprovals, error: premiumError } = await supabase
+      .from('pending_premium_subscriptions')
+      .select('*')
+      .eq('status', 'pending');
+
+    const pendingPremium = premiumError ? 0 : premiumApprovals.length;
+
+    res.json({
+      success: true,
+      totalUsers,
+      pendingMedia,
+      pendingPremium,
+      activePremium
+    });
+
+  } catch (error) {
+    console.error("Dashboard stats error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Media updates stats endpoint
+router.get("/media-updates/stats", authenticateAdmin, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('pending_media_updates')
+      .select('status');
+
+    if (error) {
+      console.error("Media stats error:", error);
+      return res.status(500).json({ success: false, message: "Server error" });
+    }
+
+    const stats = {
+      pending: data.filter(item => item.status === 'pending').length,
+      approved: data.filter(item => item.status === 'approved').length,
+      rejected: data.filter(item => item.status === 'rejected').length
+    };
+
+    res.json(stats);
+
+  } catch (error) {
+    console.error("Media stats error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Premium approvals stats endpoint
+router.get("/premium-approvals/stats", authenticateAdmin, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('pending_premium_subscriptions')
+      .select('status');
+
+    if (error) {
+      console.error("Premium stats error:", error);
+      return res.status(500).json({ success: false, message: "Server error" });
+    }
+
+    const stats = {
+      pending: data.filter(item => item.status === 'pending').length,
+      approved: data.filter(item => item.status === 'approved').length,
+      rejected: data.filter(item => item.status === 'rejected').length
+    };
+
+    res.json(stats);
+
+  } catch (error) {
+    console.error("Premium stats error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
 module.exports = router;

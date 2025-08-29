@@ -1,4 +1,3 @@
-
 document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('admin_token');
     if (!token) {
@@ -7,7 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     let currentStatus = 'pending';
-    
+
     // Load initial data
     await loadMediaUpdates();
     await loadStats();
@@ -57,7 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function renderMediaUpdates(updates) {
         const container = document.getElementById('mediaUpdatesContainer');
-        
+
         if (!updates || updates.length === 0) {
             container.innerHTML = '<p>No media updates found</p>';
             return;
@@ -81,7 +80,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <img src="${update.pending_photo_url}" alt="Profile Photo" />
                         </div>
                     ` : ''}
-                    
+
                     ${update.pending_video_url ? `
                         <div class="media-item">
                             <h4>Profile Video</h4>
@@ -129,7 +128,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             await loadMediaUpdates();
             await loadStats();
-            
+
             alert(`Media update ${status} successfully!`);
         } catch (error) {
             console.error('Error reviewing update:', error);
@@ -137,3 +136,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 });
+
+window.logout = function() {
+    localStorage.removeItem('admin_token');
+    window.location.href = 'admin-login.html';
+};
