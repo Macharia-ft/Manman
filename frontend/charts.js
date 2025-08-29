@@ -1,157 +1,91 @@
-
 document.addEventListener('DOMContentLoaded', async () => {
-  // Check if user has premium subscription
   const token = localStorage.getItem("token");
+  const spinnerOverlay = document.getElementById("spinnerOverlay");
+
   if (!token) {
-    window.location.href = 'login.html';
+    window.location.href = "login.html";
     return;
   }
 
   try {
-    const response = await fetch(`${config.API_BASE_URL}/api/user/subscription-status`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      if (data.subscription === 'free') {
-        // Redirect free users immediately without showing content
-        window.location.href = 'dashboard_page.html';
-        return;
-      }
-    }
+    spinnerOverlay.style.display = "flex";
+    await loadMatches();
   } catch (error) {
-    console.error('Error checking subscription:', error);
-    window.location.href = 'dashboard_page.html';
-    return;
-  }
-
-  // Load conversations for premium users
-  await loadConversations();
-  
-  // Add search functionality
-  const searchInput = document.querySelector('.search-input');
-  if (searchInput) {
-    searchInput.addEventListener('input', function(e) {
-      const searchTerm = e.target.value.toLowerCase();
-      const chatItems = document.querySelectorAll('.chat-item');
-      
-      chatItems.forEach(item => {
-        const name = item.querySelector('.chat-name').textContent.toLowerCase();
-        const preview = item.querySelector('.chat-preview').textContent.toLowerCase();
-        
-        if (name.includes(searchTerm) || preview.includes(searchTerm)) {
-          item.style.display = 'flex';
-        } else {
-          item.style.display = 'none';
-        }
-      });
-    });
+    console.error('Error loading matches:', error);
+  } finally {
+    spinnerOverlay.style.display = "none";
   }
 });
 
-async function checkUserSubscription() {
+async function loadMatches() {
   try {
     const token = localStorage.getItem("token");
-    const response = await fetch(`${config.API_BASE_URL}/api/user/subscription-status`, {
+    const response = await fetch(`${config.API_BASE_URL}/api/user/conversations`, {
       headers: { Authorization: `Bearer ${token}` }
     });
 
     if (response.ok) {
-      const data = await response.json();
-      return data.subscription || 'free';
-    }
-  } catch (error) {
-    console.error('Error checking subscription:', error);
-  }
-  return 'free';
-}
-
-async function loadConversations() {
-  try {
-    const token = localStorage.getItem("token");
-    const response = await fetch(`${config.API_BASE_URL}/api/messages/conversations`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      const conversations = data.conversations || [];
-      displayConversations(conversations);
+      const matches = await response.json();
+      displayMatches(matches);
     } else {
-      document.getElementById('noChats').style.display = 'block';
+      throw new Error('Failed to load matches');
     }
   } catch (error) {
-    console.error('Error loading conversations:', error);
-    document.getElementById('noChats').style.display = 'block';
+    console.error('Error loading matches:', error);
+    document.getElementById('noMatches').style.display = 'block';
   }
 }
 
-function displayConversations(conversations) {
-  const chatList = document.getElementById('chatList');
+function displayMatches(matches) {
+  const container = document.getElementById('matchesContainer');
+  const noMatches = document.getElementById('noMatches');
 
-  if (conversations.length === 0) {
-    document.getElementById('noChats').style.display = 'block';
+  if (matches.length === 0) {
+    noMatches.style.display = 'block';
     return;
   }
 
-  conversations.forEach(conv => {
-    const chatItem = document.createElement('div');
-    chatItem.className = 'chat-item';
-    chatItem.onclick = () => openChat(conv.user_id, conv.user_name);
+  container.innerHTML = '';
 
-    chatItem.innerHTML = `
-      <img src="${conv.profile_photo_url || 'https://via.placeholder.com/80'}"
-           alt="${conv.user_name}"
-           class="chat-avatar"
-           onclick="event.stopPropagation(); showProfilePhoto('${conv.profile_photo_url}', '${conv.user_name}')">
-      <div class="chat-info">
-        <div class="chat-name">${conv.user_name}</div>
-        <div class="chat-preview">${conv.last_message || 'Start a conversation...'}</div>
+  matches.forEach(match => {
+    const matchCard = document.createElement('div');
+    matchCard.className = 'match-card';
+    matchCard.onclick = () => {
+      window.location.href = `chat.html?user=${match.user_id}&name=${encodeURIComponent(match.user_name)}`;
+    };
+
+    const unreadBadge = match.unread_count > 0 ?
+      `<span class="unread-badge">${match.unread_count}</span>` : '';
+
+    matchCard.innerHTML = `
+      <div class="match-profile">
+        <img src="${match.profile_photo_url || 'https://via.placeholder.com/60?text=No+Photo'}"
+             alt="Profile" class="match-photo"
+             onerror="this.src='https://via.placeholder.com/60?text=No+Photo'">
+        <div class="match-info">
+          <h3>${match.user_name}${unreadBadge}</h3>
+          <p>Matched with you</p>
+        </div>
       </div>
-      <div class="chat-status">
-        ${conv.unread_count > 0 ? `<div class="unread-badge">${conv.unread_count}</div>` : ''}
-        <div class="chat-time">${formatTime(conv.last_message_time)}</div>
+      <div class="match-stats">
+        <div class="stat">
+          <div class="stat-number">${match.unread_count || 0}</div>
+          <div class="stat-label">Unread</div>
+        </div>
+        <div class="stat">
+          <div class="stat-number">💬</div>
+          <div class="stat-label">Chat</div>
+        </div>
+        <div class="stat">
+          <div class="stat-number">💕</div>
+          <div class="stat-label">Matched</div>
+        </div>
       </div>
+      <p style="text-align: center; color: #667eea; font-weight: bold; margin: 10px 0 0 0;">
+        ${match.last_message || 'Start a conversation...'}
+      </p>
     `;
 
-    chatList.appendChild(chatItem);
+    container.appendChild(matchCard);
   });
-}
-
-function openChat(userId, userName) {
-  window.location.href = `chat.html?user=${userId}&name=${encodeURIComponent(userName)}`;
-}
-
-function showProfilePhoto(photoUrl, userName) {
-  const floating = document.getElementById('floatingProfilePhoto');
-  const img = document.getElementById('floatingProfilePic');
-
-  img.src = photoUrl || 'https://via.placeholder.com/400';
-  img.alt = userName;
-  floating.style.display = 'flex';
-
-  document.getElementById('closeProfileBtn').onclick = () => {
-    floating.style.display = 'none';
-  };
-
-  floating.onclick = (e) => {
-    if (e.target === floating) {
-      floating.style.display = 'none';
-    }
-  };
-}
-
-function formatTime(timestamp) {
-  if (!timestamp) return '';
-
-  const date = new Date(timestamp);
-  const now = new Date();
-  const diff = now - date;
-
-  if (diff < 24 * 60 * 60 * 1000) {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  } else {
-    return date.toLocaleDateString();
-  }
 }

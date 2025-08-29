@@ -263,8 +263,9 @@ async function processMpesaPayment() {
     });
     
     if (response.ok) {
-      alert('M-Pesa payment submitted successfully! Your subscription will be activated within 24 hours.');
+      showPaymentSubmittedNotification('M-Pesa payment submitted successfully! Admin will review and approve within 24 hours.');
       closePaymentModal();
+      setTimeout(() => loadCurrentSubscription(), 1000);
     } else {
       alert('Payment verification failed. Please check your transaction details.');
     }
@@ -307,8 +308,9 @@ async function processCryptoPayment() {
     });
     
     if (response.ok) {
-      alert('Crypto payment submitted successfully! Your subscription will be activated within 24 hours.');
+      showPaymentSubmittedNotification('Crypto payment submitted successfully! Admin will review and approve within 24 hours.');
       closePaymentModal();
+      setTimeout(() => loadCurrentSubscription(), 1000);
     } else {
       alert('Payment verification failed. Please check your transaction details.');
     }
@@ -319,6 +321,98 @@ async function processCryptoPayment() {
     spinner.style.display = 'none';
   }
 }
+
+function showPaymentSubmittedNotification(message) {
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #28a745;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 10001;
+    max-width: 400px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  `;
+
+  notification.innerHTML = `
+    <span>${message}</span>
+    <button onclick="this.parentElement.remove()" style="background: none; border: none; color: white; font-size: 18px; cursor: pointer; margin-left: 10px;">×</button>
+  `;
+
+  document.body.appendChild(notification);
+
+  setTimeout(() => {
+    if (notification.parentElement) {
+      notification.remove();
+    }
+  }, 10000);
+}
+
+async function checkPendingPayments() {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${config.API_BASE_URL}/api/user/payment-status`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.pending && data.admin_message) {
+        showAdminMessage(data.admin_message, data.status);
+      }
+    }
+  } catch (error) {
+    console.error('Error checking pending payments:', error);
+  }
+}
+
+function showAdminMessage(message, status) {
+  const bgColor = status === 'approved' ? '#28a745' : '#dc3545';
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: ${bgColor};
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 10001;
+    max-width: 400px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  `;
+
+  notification.innerHTML = `
+    <span>${message}</span>
+    <button onclick="this.parentElement.remove(); clearAdminMessage();" style="background: none; border: none; color: white; font-size: 18px; cursor: pointer; margin-left: 10px;">×</button>
+  `;
+
+  document.body.appendChild(notification);
+}
+
+async function clearAdminMessage() {
+  try {
+    const token = localStorage.getItem("token");
+    await fetch(`${config.API_BASE_URL}/api/user/clear-message`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  } catch (error) {
+    console.error('Error clearing admin message:', error);
+  }
+}
+
+// Load pending payments on page load
+document.addEventListener('DOMContentLoaded', checkPendingPayments);
 
 // Close modal when clicking outside
 document.getElementById('paymentModal').addEventListener('click', function(e) {

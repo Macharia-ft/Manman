@@ -169,4 +169,77 @@ router.get("/conversations", async (req, res) => {
   }
 });
 
+// Add payment status endpoint
+router.get("/payment-status", async (req, res) => {
+  try {
+    const jwt = require("jsonwebtoken");
+    const { createClient } = require("@supabase/supabase-js");
+    
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseAnonKey = process.env.ANON_KEY;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.json({ pending: false });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const email = decoded.email;
+
+    // Check for pending payment approvals
+    const { data: pendingPayments, error } = await supabase
+      .from('payment_approvals')
+      .select('*')
+      .eq('user_email', email)
+      .eq('status', 'pending')
+      .or('status.eq.approved,status.eq.disapproved')
+      .not('admin_message', 'is', null);
+
+    if (pendingPayments && pendingPayments.length > 0) {
+      const payment = pendingPayments[0];
+      res.json({
+        pending: true,
+        status: payment.status,
+        admin_message: payment.admin_message
+      });
+    } else {
+      res.json({ pending: false });
+    }
+  } catch (error) {
+    console.error('Payment status check error:', error);
+    res.json({ pending: false });
+  }
+});
+
+// Clear admin message
+router.post("/clear-message", async (req, res) => {
+  try {
+    const jwt = require("jsonwebtoken");
+    const { createClient } = require("@supabase/supabase-js");
+    
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseAnonKey = process.env.ANON_KEY;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ success: false });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const email = decoded.email;
+
+    await supabase
+      .from('payment_approvals')
+      .update({ admin_message: null })
+      .eq('user_email', email);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Clear message error:', error);
+    res.json({ success: false });
+  }
+});
+
 module.exports = router;

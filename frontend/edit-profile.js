@@ -183,8 +183,8 @@ async function updateMedia() {
     spinnerOverlay.style.display = "none";
 
     if (response.ok && result.success) {
-      alert("✅ Media updated successfully! Changes are pending admin approval.");
-      location.reload(); // Reload to show updated media
+      alert("✅ Media update request submitted successfully! Admin will review and approve your changes within 24 hours.");
+      // Don't reload as changes are pending approval
     } else {
       alert("❌ " + (result.message || "Error updating media."));
     }

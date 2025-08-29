@@ -287,12 +287,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       } else if (activeSection === "selected-you") {
         actions.innerHTML = `
-          <button class="select-btn">Accept</button>
+          <button class="select-btn" ${foundMatch ? 'disabled' : ''}>
+            ${foundMatch ? 'Found Match' : 'Accept'}
+          </button>
           <button class="remove-btn">Reject</button>
         `;
 
         const acceptButton = actions.querySelector(".select-btn");
-        if (acceptButton) {
+        if (acceptButton && !foundMatch) {
           acceptButton.addEventListener("click", async (event) => {
             if (acceptButton.disabled) return;
             acceptButton.disabled = true;
@@ -352,15 +354,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       } else if (activeSection === "removed") {
         actions.innerHTML = `
-          <button class="found-match-btn" disabled>User Found Match</button>
-          <button class="view-removed-btn">View Profile</button>
+          <button class="restore-btn">Restore</button>
         `;
 
-        const viewRemovedButton = actions.querySelector(".view-removed-btn");
-        if (viewRemovedButton) {
-          viewRemovedButton.addEventListener("click", () => {
-            // Navigate to this user's profile page in removed section
-            window.location.href = `profile.html?id=${user.id}&section=removed`;
+        const restoreButton = actions.querySelector(".restore-btn");
+        if (restoreButton) {
+          restoreButton.addEventListener("click", async () => {
+            await moveProfile(user, 'removed', user.originalLocation || 'all', null);
           });
         }
       }

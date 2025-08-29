@@ -129,7 +129,7 @@ async function sendMessage() {
 
   try {
     const token = localStorage.getItem("token");
-    
+
     // Send message to backend
     const response = await fetch(`${config.API_BASE_URL}/api/messages/send`, {
       method: 'POST',
@@ -146,7 +146,7 @@ async function sendMessage() {
     if (response.ok) {
       // Display message immediately upon successful send
       displayMessage(message, 'sent');
-      
+
       // Clear input
       messageInput.value = '';
       messageInput.style.height = 'auto';
@@ -195,7 +195,7 @@ function displayMessage(message, type) {
 async function loadMessages() {
   try {
     const token = localStorage.getItem("token");
-    
+
     const response = await fetch(`${config.API_BASE_URL}/api/messages/conversation/${currentUserId}`, {
       headers: {
         'Authorization': `Bearer ${token}`
@@ -205,19 +205,30 @@ async function loadMessages() {
     if (response.ok) {
       const data = await response.json();
       const messages = data.messages || [];
-      
-      const messagesContainer = document.getElementById('chatMessages');
-      messagesContainer.innerHTML = '';
-      
+
+      const chatMessages = document.getElementById('chatMessages');
+      chatMessages.innerHTML = '';
+
       if (messages.length === 0) {
-        messagesContainer.innerHTML = '<div class="no-messages">Start your conversation here...</div>';
+        chatMessages.innerHTML = '<div class="no-messages">Start your conversation here...</div>';
       } else {
         messages.forEach(msg => {
-          // Determine if message was sent by current user
-          const currentUserEmail = getCurrentUserEmailFromToken();
-          const isSentByCurrentUser = msg.sender.email === currentUserEmail;
-          
-          displayMessageFromDB(msg.message, isSentByCurrentUser ? 'sent' : 'received', msg.created_at);
+          const messageDiv = document.createElement('div');
+          messageDiv.classList.add('message');
+
+          // Add sender or receiver class for proper alignment
+          if (msg.sender_id === currentUserId) {
+            messageDiv.classList.add('sender');
+          } else {
+            messageDiv.classList.add('receiver');
+          }
+
+          messageDiv.innerHTML = `
+          <div class="message-content">${msg.message}</div>
+          <div class="message-time">${new Date(msg.sent_at).toLocaleTimeString()}</div>
+        `;
+
+          chatMessages.appendChild(messageDiv);
         });
       }
     }
@@ -226,7 +237,7 @@ async function loadMessages() {
     const messagesContainer = document.getElementById('chatMessages');
     messagesContainer.innerHTML = '<div class="no-messages">Start your conversation here...</div>';
   }
-  
+
   // Auto-refresh messages every 3 seconds for real-time updates
   setTimeout(loadMessages, 3000);
 }
@@ -234,7 +245,7 @@ async function loadMessages() {
 function getCurrentUserEmailFromToken() {
   const token = localStorage.getItem("token");
   if (!token) return null;
-  
+
   try {
     const parts = token.split(".");
     if (parts.length !== 3) return null;
@@ -264,7 +275,7 @@ function displayMessageFromDB(message, type, timestamp) {
 
   const time = document.createElement('div');
   time.className = 'message-time';
-  
+
   // Format timestamp
   if (timestamp) {
     const date = new Date(timestamp);
