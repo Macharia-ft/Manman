@@ -186,17 +186,23 @@ body {
 /* Profile Cards */
 .profiles-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 12px;
+  gap: 20px;
+  padding: 20px;
+  grid-template-columns: repeat(2, 1fr); /* Two columns on desktop */
 }
+
+@media (max-width: 768px) {
+  .profiles-list {
+    grid-template-columns: 1fr; /* Single column on mobile */
+  }
+}
+
 .profile-card {
-  background-color: white;
-  border-radius: 6px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  overflow: hidden;
+  transition: transform 0.3s ease;
 }
 .profile-info {
   display: flex;
@@ -395,7 +401,7 @@ body {
   padding: 40px;
   background: white;
   border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
   max-width: 400px;
   margin: 20px auto;
 }

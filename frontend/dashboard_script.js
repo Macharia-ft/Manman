@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
 
-    const userResponse = await fetch(`${config.API_BASE_URL}/api/users/${currentUserEmail}`, {
+    const userResponse = await fetch(`${config.API_BASE_URL}/api/users/${currentUserEmail}?priorityFilter=true`, {
       method: "GET",
       headers: { Authorization: `Bearer ${token}` }
     });
