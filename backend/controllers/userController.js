@@ -1002,7 +1002,22 @@ module.exports = {
       // Get sender info
       const { data: sender, error: senderError } = await supabase
         .from('users')
-        .select('id, full_name')
+        .select('*')
+        .eq('email', senderEmail)
+        .single();
+
+      if (senderError || !sender) {
+        return res.status(404).json({ success: false, message: "Sender not found" });
+      }
+
+      res.json({ success: true, message: "Match request sent successfully" });
+    } catch (error) {
+      console.error("Send match request error:", error);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  },
+
+  uploadToCloudinary: uploadToCloudinaryelect('id, full_name')
         .eq('email', senderEmail)
         .single();
 

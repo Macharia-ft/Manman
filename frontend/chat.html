@@ -15,9 +15,58 @@
 
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       min-height: 100vh;
-      padding: 20px;
+    }
+
+    .message.current-user {
+      justify-content: flex-end;
+    }
+
+    .message.current-user .message-content {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 20px 20px 5px 20px;
+      margin-left: 50px;
+      margin-right: 10px;
+    }
+
+    .message.other-user {
+      justify-content: flex-start;
+    }
+
+    .message.other-user .message-content {
+      background: #f1f3f4;
+      color: #333;
+      border-radius: 20px 20px 20px 5px;
+      margin-right: 50px;
+      margin-left: 10px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .message-content {
+      max-width: 70%;
+      padding: 12px 16px;
+      margin: 5px 0;
+      word-wrap: break-word;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .message-time {
+      font-size: 11px;
+      opacity: 0.7;
+      margin-top: 4px;
+      text-align: right;
+    }
+
+    .current-user .message-time {
+      color: rgba(255,255,255,0.8);
+    }
+
+    .other-user .message-time {
+      color: #666;
     }
 
     .chat-container {

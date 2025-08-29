@@ -4,33 +4,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Premium Approvals - Admin</title>
-    <link rel="stylesheet" href="admin-dashboard.css">
+    <title>Premium Subscription Approvals - Admin</title>
+    <link rel="stylesheet" href="admin-media-updates.css">
 </head>
 <body>
     <div class="admin-container">
         <header>
-            <h1>Premium Approvals</h1>
+            <h1>Premium Subscription Approvals</h1>
             <nav>
-                <a href="admin-dashboard.html">Dashboard</a>
-                <a href="admin-media-updates.html">Media Updates</a>
-                <a href="admin-premium-approvals.html" class="active">Premium Approvals</a>
+                <a href="admin-dashboard.html" class="nav-item">Dashboard</a>
+                <a href="admin-media-updates.html" class="nav-item">Media Updates</a>
+                <a href="admin-premium-approvals.html" class="nav-item active">Premium Approvals</a>
+                <button onclick="logout()" class="logout-btn">Logout</button>
             </nav>
         </header>
 
         <div class="content">
             <div class="stats">
                 <div class="stat-card">
-                    <h3>Pending Approvals</h3>
-                    <span id="pendingApprovals">0</span>
+                    <h3>Pending Reviews</h3>
+                    <span id="pendingCount">0</span>
                 </div>
                 <div class="stat-card">
                     <h3>Approved Today</h3>
-                    <span id="approvedToday">0</span>
+                    <span id="approvedCount">0</span>
                 </div>
                 <div class="stat-card">
-                    <h3>Total Revenue</h3>
-                    <span id="totalRevenue">$0</span>
+                    <h3>Rejected Today</h3>
+                    <span id="rejectedCount">0</span>
                 </div>
             </div>
 
@@ -40,138 +41,13 @@
                 <button class="filter-btn" data-status="rejected">Rejected</button>
             </div>
 
-            <div id="approvalsContainer" class="approvals-container">
-                <!-- Approvals will be loaded here -->
+            <div id="subscriptionsContainer" class="updates-container">
+                <!-- Premium subscriptions will be loaded here -->
             </div>
         </div>
     </div>
 
     <script src="config.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            const token = localStorage.getItem('admin_token');
-            if (!token) {
-                window.location.href = 'admin-login.html';
-                return;
-            }
-
-            let currentStatus = 'pending';
-            
-            // Load initial data
-            await loadApprovals();
-            await loadStats();
-
-            // Filter buttons
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    currentStatus = btn.dataset.status;
-                    await loadApprovals();
-                });
-            });
-
-            async function loadApprovals() {
-                try {
-                    const response = await fetch(`${config.API_BASE_URL}/api/admin/premium-subscriptions?status=${currentStatus}`, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-
-                    if (!response.ok) throw new Error('Failed to load approvals');
-
-                    const approvals = await response.json();
-                    renderApprovals(approvals);
-                } catch (error) {
-                    console.error('Error loading approvals:', error);
-                    document.getElementById('approvalsContainer').innerHTML = '<p>Error loading premium approvals</p>';
-                }
-            }
-
-            async function loadStats() {
-                try {
-                    const response = await fetch(`${config.API_BASE_URL}/api/admin/premium-subscriptions/stats`, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-
-                    if (response.ok) {
-                        const stats = await response.json();
-                        document.getElementById('pendingApprovals').textContent = stats.pending || 0;
-                        document.getElementById('approvedToday').textContent = stats.approved || 0;
-                        document.getElementById('totalRevenue').textContent = `$${stats.revenue || 0}`;
-                    }
-                } catch (error) {
-                    console.error('Error loading stats:', error);
-                }
-            }
-
-            function renderApprovals(approvals) {
-                const container = document.getElementById('approvalsContainer');
-                
-                if (!approvals || approvals.length === 0) {
-                    container.innerHTML = '<p>No premium approval requests found</p>';
-                    return;
-                }
-
-                container.innerHTML = approvals.map(approval => `
-                    <div class="approval-card">
-                        <div class="approval-header">
-                            <div class="user-info">
-                                <h3>${approval.user_email}</h3>
-                                <p>Payment Method: ${approval.payment_method}</p>
-                                <p>Amount: $${approval.amount}</p>
-                                <p>Requested: ${new Date(approval.requested_at).toLocaleDateString()}</p>
-                            </div>
-                            <span class="status-badge status-${approval.status}">${approval.status.toUpperCase()}</span>
-                        </div>
-
-                        ${approval.payment_proof_url ? `
-                            <div class="payment-proof">
-                                <h4>Payment Proof</h4>
-                                <img src="${approval.payment_proof_url}" alt="Payment Proof" style="max-width: 300px; height: auto;" />
-                            </div>
-                        ` : ''}
-
-                        ${approval.status === 'pending' ? `
-                            <div class="actions">
-                                <textarea class="admin-message" placeholder="Admin message (optional)..." id="message-${approval.id}"></textarea>
-                                <button class="btn btn-approve" onclick="reviewSubscription(${approval.id}, 'approved')">Approve</button>
-                                <button class="btn btn-reject" onclick="reviewSubscription(${approval.id}, 'rejected')">Reject</button>
-                            </div>
-                        ` : ''}
-                    </div>
-                `).join('');
-            }
-
-            window.reviewSubscription = async (subscriptionId, status) => {
-                try {
-                    const messageTextarea = document.getElementById(`message-${subscriptionId}`);
-                    const adminMessage = messageTextarea ? messageTextarea.value : '';
-
-                    const response = await fetch(`${config.API_BASE_URL}/api/admin/premium-subscriptions/review`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            Authorization: `Bearer ${token}`
-                        },
-                        body: JSON.stringify({
-                            subscriptionId,
-                            status,
-                            adminMessage
-                        })
-                    });
-
-                    if (!response.ok) throw new Error('Failed to review subscription');
-
-                    await loadApprovals();
-                    await loadStats();
-                    
-                    alert(`Premium subscription ${status} successfully!`);
-                } catch (error) {
-                    console.error('Error reviewing subscription:', error);
-                    alert('Error reviewing subscription');
-                }
-            };
-        });
-    </script>
+    <script src="admin-premium-approvals.js"></script>
 </body>
 </html>

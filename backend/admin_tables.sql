@@ -21,6 +21,8 @@ CREATE TABLE pending_premium_subscriptions (
     amount DECIMAL(10,2) NOT NULL,
     currency VARCHAR(10) NOT NULL,
     transaction_reference VARCHAR(255),
+    phone_number VARCHAR(20),
+    plan VARCHAR(20) DEFAULT 'premium',
     status VARCHAR(20) DEFAULT 'pending', -- 'pending', 'approved', 'rejected'
     admin_message TEXT,
     requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

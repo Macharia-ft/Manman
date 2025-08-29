@@ -201,7 +201,7 @@ async function loadMessages() {
     const currentUserResponse = await fetch(`${config.API_BASE_URL}/api/user?email=${currentUserEmail}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
-    
+
     let currentUserIdFromDB = null;
     if (currentUserResponse.ok) {
       const currentUserData = await currentUserResponse.json();
@@ -230,7 +230,7 @@ async function loadMessages() {
 
           // Determine if message is from current user or other user
           const isCurrentUser = msg.sender_id === currentUserIdFromDB;
-          
+
           if (isCurrentUser) {
             messageDiv.classList.add('sent');
           } else {
@@ -246,7 +246,7 @@ async function loadMessages() {
 
           chatMessages.appendChild(messageDiv);
         });
-        
+
         // Scroll to bottom
         chatMessages.scrollTop = chatMessages.scrollHeight;
       }

@@ -864,6 +864,107 @@ app.get('/api/user', async (req, res) => {
   }
 });
 
+// M-Pesa payment verification endpoint
+app.post('/api/payment/mpesa/verify', upload.single('payment_proof'), async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userEmail = decoded.email;
+
+    const { plan, amount, transaction_id, phone_number } = req.body;
+    const proofFile = req.file;
+
+    if (!plan || !amount || !transaction_id || !phone_number || !proofFile) {
+      return res.status(400).json({ success: false, message: 'All fields are required' });
+    }
+
+    // Upload proof to Cloudinary
+    const uploadToCloudinary = require('./controllers/userController').uploadToCloudinary;
+    const proofUpload = await uploadToCloudinary(proofFile.path, 'payment_proofs', proofFile.mimetype);
+
+    // Store in pending subscriptions
+    const { error } = await supabase
+      .from('pending_premium_subscriptions')
+      .insert({
+        user_email: userEmail,
+        payment_method: 'mpesa',
+        payment_proof_url: proofUpload.url,
+        amount: parseFloat(amount),
+        currency: 'USD',
+        transaction_reference: transaction_id,
+        phone_number: phone_number,
+        plan: plan,
+        status: 'pending',
+        requested_at: new Date().toISOString()
+      });
+
+    // Clean up temp file
+    const fs = require('fs');
+    fs.unlink(proofFile.path, (err) => {
+      if (err) console.error('Error deleting temp file:', err);
+    });
+
+    if (error) {
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+
+    res.json({ success: true, message: 'Payment submitted for review' });
+  } catch (error) {
+    console.error('M-Pesa payment error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Crypto payment verification endpoint
+app.post('/api/payment/crypto/verify', upload.single('transaction_proof'), async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userEmail = decoded.email;
+
+    const { plan, amount, crypto_type, transaction_id } = req.body;
+    const proofFile = req.file;
+
+    if (!plan || !amount || !crypto_type || !transaction_id || !proofFile) {
+      return res.status(400).json({ success: false, message: 'All fields are required' });
+    }
+
+    // Upload proof to Cloudinary
+    const uploadToCloudinary = require('./controllers/userController').uploadToCloudinary;
+    const proofUpload = await uploadToCloudinary(proofFile.path, 'payment_proofs', proofFile.mimetype);
+
+    // Store in pending subscriptions
+    const { error } = await supabase
+      .from('pending_premium_subscriptions')
+      .insert({
+        user_email: userEmail,
+        payment_method: 'crypto',
+        payment_proof_url: proofUpload.url,
+        amount: parseFloat(amount),
+        currency: crypto_type,
+        transaction_reference: transaction_id,
+        plan: plan,
+        status: 'pending',
+        requested_at: new Date().toISOString()
+      });
+
+    // Clean up temp file
+    const fs = require('fs');
+    fs.unlink(proofFile.path, (err) => {
+      if (err) console.error('Error deleting temp file:', err);
+    });
+
+    if (error) {
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+
+    res.json({ success: true, message: 'Payment submitted for review' });
+  } catch (error) {
+    console.error('Crypto payment error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 // Send match request
 app.post("/api/users/match-request", upload.none(), userController.sendMatchRequest);
 
@@ -980,6 +1081,91 @@ app.get('/api/admin/premium-subscriptions', async (req, res) => {
 });
 
 app.post('/api/admin/premium-subscriptions/review', async (req, res) => {
+  try {
+    const { subscriptionId, status, adminMessage } = req.body;
+
+    if (status === 'approved') {
+      // Get the subscription details
+      const { data: subscription } = await supabase
+        .from('pending_premium_subscriptions')
+        .select('*')
+        .eq('id', subscriptionId)
+        .single();
+
+      if (subscription) {
+        // Update user's subscription status
+        await supabase
+          .from('users')
+          .update({ subscription: 'premium' })
+          .eq('email', subscription.user_email);
+
+        // Create active subscription record
+        const endDate = new Date();
+        endDate.setDate(endDate.getDate() + 30); // 30 days premium
+
+        await supabase
+          .from('subscriptions')
+          .insert({
+            user_id: subscription.user_email,
+            plan: subscription.plan || 'premium',
+            status: 'active',
+            start_date: new Date().toISOString(),
+            end_date: endDate.toISOString()
+          });
+      }
+    }
+
+    // Update the pending subscription status
+    await supabase
+      .from('pending_premium_subscriptions')
+      .update({
+        status,
+        admin_message: adminMessage,
+        reviewed_at: new Date().toISOString()
+      })
+      .eq('id', subscriptionId);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error reviewing subscription:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Premium subscription stats
+app.get('/api/admin/premium-approvals/stats', async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data: pending } = await supabase
+      .from('pending_premium_subscriptions')
+      .select('id')
+      .eq('status', 'pending');
+
+    const { data: approved } = await supabase
+      .from('pending_premium_subscriptions')
+      .select('id')
+      .eq('status', 'approved')
+      .gte('reviewed_at', today);
+
+    const { data: rejected } = await supabase
+      .from('pending_premium_subscriptions')
+      .select('id')
+      .eq('status', 'rejected')
+      .gte('reviewed_at', today);
+
+    res.json({
+      pending: pending?.length || 0,
+      approved: approved?.length || 0,
+      rejected: rejected?.length || 0
+    });
+  } catch (error) {
+    console.error('Error fetching premium stats:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/api/admin/premium-subscriptions/review-old', async (req, res) => {
   try {
     const { subscriptionId, status, adminMessage } = req.body;
 
