@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
+const path = require("path");
 const { createClient } = require("@supabase/supabase-js");
 const upload = require('./middleware/upload'); // Assuming you have multer setup in middleware
 const userController = require('./controllers/userController'); // Assuming you have userController
@@ -37,6 +38,11 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // ✅ Serve static files FIRST so frontend pages are accessible
 app.use(express.static('frontend'));
+
+// ✅ Root route to serve index.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/index.html'));
+});
 
 // ✅ API routes
 app.use("/api", authRoutes);
