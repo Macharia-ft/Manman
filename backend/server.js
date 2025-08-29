@@ -1,4 +1,4 @@
-require("dotenv").config({ path: "./backend/.env" });
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
@@ -15,6 +15,7 @@ const preferencesRoute = require("./routes/preferences");
 const statusRoute = require("./routes/status");
 const adminRoutes = require("./routes/admin");
 const userRoutes = require("./routes/user");
+const messageRoutes = require("./routes/messages");
 
 const app = express();
 
@@ -42,6 +43,7 @@ app.use("/api", preferencesRoute);
 app.use("/api", statusRoute);
 app.use('/api/admin', adminRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/messages", messageRoutes);
 
 // Admin media updates routes
 app.get("/api/admin/media-updates", async (req, res) => {

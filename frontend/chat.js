@@ -116,34 +116,52 @@ function setupMessageInput() {
   sendBtn.addEventListener('click', sendMessage);
 }
 
-function sendMessage() {
+async function sendMessage() {
   const messageInput = document.getElementById('messageInput');
   const message = messageInput.value.trim();
+  const sendBtn = document.getElementById('sendBtn');
 
   if (message === '') return;
 
-  // Display message immediately
-  displayMessage(message, 'sent');
+  // Disable send button to prevent spam
+  sendBtn.disabled = true;
+  sendBtn.textContent = '...';
 
-  // Clear input
-  messageInput.value = '';
-  messageInput.style.height = 'auto';
+  try {
+    const token = localStorage.getItem("token");
+    
+    // Send message to backend
+    const response = await fetch(`${config.API_BASE_URL}/api/messages/send`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        receiverId: currentUserId,
+        message: message
+      })
+    });
 
-  // Here you would typically send the message to your backend/socket server
-  // For now, we'll just simulate receiving a message after a delay
-  setTimeout(() => {
-    const responses = [
-      "That's interesting!",
-      "Tell me more about that.",
-      "I agree with you.",
-      "What do you think about it?",
-      "That sounds great!",
-      "I'd love to hear more.",
-      "That's a good point."
-    ];
-    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-    displayMessage(randomResponse, 'received');
-  }, 1000 + Math.random() * 2000);
+    if (response.ok) {
+      // Display message immediately upon successful send
+      displayMessage(message, 'sent');
+      
+      // Clear input
+      messageInput.value = '';
+      messageInput.style.height = 'auto';
+    } else {
+      const errorData = await response.json();
+      alert('Failed to send message: ' + (errorData.message || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('Error sending message:', error);
+    alert('Failed to send message. Please try again.');
+  } finally {
+    // Re-enable send button
+    sendBtn.disabled = false;
+    sendBtn.textContent = '➤';
+  }
 }
 
 function displayMessage(message, type) {
@@ -174,11 +192,93 @@ function displayMessage(message, type) {
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-function loadMessages() {
-  // In a real application, you would load messages from your backend
-  // For now, we'll just show the initial "start conversation" state
+async function loadMessages() {
+  try {
+    const token = localStorage.getItem("token");
+    
+    const response = await fetch(`${config.API_BASE_URL}/api/messages/conversation/${currentUserId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const messages = data.messages || [];
+      
+      const messagesContainer = document.getElementById('chatMessages');
+      messagesContainer.innerHTML = '';
+      
+      if (messages.length === 0) {
+        messagesContainer.innerHTML = '<div class="no-messages">Start your conversation here...</div>';
+      } else {
+        messages.forEach(msg => {
+          // Determine if message was sent by current user
+          const currentUserEmail = getCurrentUserEmailFromToken();
+          const isSentByCurrentUser = msg.sender.email === currentUserEmail;
+          
+          displayMessageFromDB(msg.message, isSentByCurrentUser ? 'sent' : 'received', msg.created_at);
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error loading messages:', error);
+    const messagesContainer = document.getElementById('chatMessages');
+    messagesContainer.innerHTML = '<div class="no-messages">Start your conversation here...</div>';
+  }
+  
+  // Auto-refresh messages every 3 seconds for real-time updates
+  setTimeout(loadMessages, 3000);
+}
+
+function getCurrentUserEmailFromToken() {
+  const token = localStorage.getItem("token");
+  if (!token) return null;
+  
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(atob(parts[1]));
+    return payload.email;
+  } catch (e) {
+    console.error("Error decoding token:", e);
+    return null;
+  }
+}
+
+function displayMessageFromDB(message, type, timestamp) {
   const messagesContainer = document.getElementById('chatMessages');
-  messagesContainer.innerHTML = '<div class="no-messages">Start your conversation here...</div>';
+
+  // Remove "no messages" text if it exists
+  const noMessages = messagesContainer.querySelector('.no-messages');
+  if (noMessages) {
+    noMessages.remove();
+  }
+
+  const messageDiv = document.createElement('div');
+  messageDiv.className = `message ${type}`;
+
+  const bubble = document.createElement('div');
+  bubble.className = 'message-bubble';
+  bubble.textContent = message;
+
+  const time = document.createElement('div');
+  time.className = 'message-time';
+  
+  // Format timestamp
+  if (timestamp) {
+    const date = new Date(timestamp);
+    time.textContent = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } else {
+    time.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  bubble.appendChild(time);
+  messageDiv.appendChild(bubble);
+  messagesContainer.appendChild(messageDiv);
+
+  // Scroll to bottom
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
 function showProfilePhoto(photoUrl, userName) {

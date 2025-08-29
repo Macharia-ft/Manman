@@ -146,6 +146,10 @@ function createMpesaForm() {
       <label for="mpesaPhone">Your Phone Number:</label>
       <input type="tel" id="mpesaPhone" placeholder="e.g., 0712345678" required>
     </div>
+    <div class="form-group">
+      <label for="mpesaProof">Payment Proof (Screenshot):</label>
+      <input type="file" id="mpesaProof" accept="image/*" required>
+    </div>
     <div style="display: flex; gap: 10px; margin-top: 20px;">
       <button class="subscribe-btn" onclick="processMpesaPayment()" style="flex: 1;">
         <span id="mpesaSpinner" class="spinner"></span>
@@ -231,36 +235,38 @@ async function processPayPalPayment() {
 async function processMpesaPayment() {
   const transactionId = document.getElementById('mpesaTransactionId').value.trim();
   const phoneNumber = document.getElementById('mpesaPhone').value.trim();
+  const proofFile = document.getElementById('mpesaProof').files[0];
   const spinner = document.getElementById('mpesaSpinner');
   
-  if (!transactionId || !phoneNumber) {
-    alert('Please fill in all fields.');
+  if (!transactionId || !phoneNumber || !proofFile) {
+    alert('Please fill in all fields and upload payment proof.');
     return;
   }
   
   spinner.style.display = 'inline-block';
   
   try {
+    const formData = new FormData();
+    formData.append('plan', selectedPlan.plan);
+    formData.append('amount', selectedPlan.price);
+    formData.append('transaction_id', transactionId);
+    formData.append('phone_number', phoneNumber);
+    formData.append('payment_proof', proofFile);
+    
     const token = localStorage.getItem("token");
     const response = await fetch(`${config.API_BASE_URL}/api/payment/mpesa/verify`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({
-        plan: selectedPlan.plan,
-        amount: selectedPlan.price,
-        transaction_id: transactionId,
-        phone_number: phoneNumber
-      })
+      body: formData
     });
     
     if (response.ok) {
       alert('M-Pesa payment submitted successfully! Your subscription will be activated within 24 hours.');
       closePaymentModal();
     } else {
-      alert('Payment verification failed. Please check your transaction ID.');
+      alert('Payment verification failed. Please check your transaction details.');
     }
   } catch (error) {
     console.error('M-Pesa payment error:', error);

@@ -70,12 +70,13 @@ async function checkUserSubscription() {
 async function loadConversations() {
   try {
     const token = localStorage.getItem("token");
-    const response = await fetch(`${config.API_BASE_URL}/api/user/conversations`, {
+    const response = await fetch(`${config.API_BASE_URL}/api/messages/conversations`, {
       headers: { Authorization: `Bearer ${token}` }
     });
 
     if (response.ok) {
-      const conversations = await response.json();
+      const data = await response.json();
+      const conversations = data.conversations || [];
       displayConversations(conversations);
     } else {
       document.getElementById('noChats').style.display = 'block';

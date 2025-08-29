@@ -1,4 +1,4 @@
-require("dotenv").config({ path: "./backend/.env" });
+require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const { createClient } = require("@supabase/supabase-js");
 const cloudinary = require("cloudinary").v2;

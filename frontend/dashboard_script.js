@@ -351,12 +351,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
       } else if (activeSection === "removed") {
-        actions.innerHTML = `<button class="restore-btn">Restore</button>`;
+        actions.innerHTML = `
+          <button class="found-match-btn" disabled>User Found Match</button>
+          <button class="view-removed-btn">View Profile</button>
+        `;
 
-        const restoreButton = actions.querySelector(".restore-btn");
-        if (restoreButton) {
-          restoreButton.addEventListener("click", async () => {
-            await moveProfile(user, 'removed', user.originalLocation || 'all', null);
+        const viewRemovedButton = actions.querySelector(".view-removed-btn");
+        if (viewRemovedButton) {
+          viewRemovedButton.addEventListener("click", () => {
+            // Navigate to this user's profile page in removed section
+            window.location.href = `profile.html?id=${user.id}&section=removed`;
           });
         }
       }
