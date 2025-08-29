@@ -1,15 +1,15 @@
 modules = ["nodejs-20", "web"]
-run = "node backend/db/backend/db/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/server.js"
+run = "node backend/db/backend/db/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/frontend/index.html"
 
 [nix]
 channel = "stable-25_05"
 
 [deployment]
-run = ["node", "backend/server.js"]
+run = ["sh", "-c", "node backend/db/backend/db/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/frontend/index.html"]
 deploymentTarget = "autoscale"
 
 [workflows]
-runButton = "Start Backend"
+runButton = "Project"
 
 [[workflows.workflow]]
 name = "Start Server"
@@ -33,13 +33,13 @@ args = "Full Stack Server"
 name = "Full Stack Server"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd backend && node server.js"
-waitForPort = 5000
-
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node backend/server.js"
+waitForPort = 5000
 
 [[workflows.workflow]]
 name = "Start Backend"
