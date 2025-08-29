@@ -915,6 +915,35 @@ module.exports = {
         });
       }
 
+      // Check subscription status and upload restrictions
+      const userSubscription = existingUser.subscription || 'free';
+      const restrictionDays = userSubscription === 'premium' ? 7 : 30; // Premium: 1 week, Free: 1 month
+      
+      // Check last media update request
+      const { data: lastUpdate, error: lastUpdateError } = await supabase
+        .from('pending_media_updates')
+        .select('requested_at')
+        .eq('user_email', userEmail)
+        .order('requested_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (lastUpdate && !lastUpdateError) {
+        const lastUpdateDate = new Date(lastUpdate.requested_at);
+        const currentDate = new Date();
+        const daysSinceLastUpdate = Math.floor((currentDate - lastUpdateDate) / (1000 * 60 * 60 * 24));
+        
+        if (daysSinceLastUpdate < restrictionDays) {
+          const remainingDays = restrictionDays - daysSinceLastUpdate;
+          return res.status(429).json({
+            success: false,
+            message: `You can update your media again in ${remainingDays} days. ${userSubscription === 'premium' ? 'Premium users can update weekly' : 'Free users can update monthly'}.`,
+            remainingDays: remainingDays,
+            nextUpdateDate: new Date(lastUpdateDate.getTime() + (restrictionDays * 24 * 60 * 60 * 1000))
+          });
+        }
+      }
+
       // Handle file uploads
       const { profilePhoto, profileVideo } = req.files || {};
       let profilePhotoUrl = null;

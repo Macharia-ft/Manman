@@ -213,8 +213,14 @@
     <!-- Media Section -->
     <div class="section">
       <h3>Profile Media</h3>
-      <div id="updateNotice" class="update-notice">
-        <strong>Update Limitation:</strong> Profile photo and video can only be updated once per month (Premium: once per week). Updates require admin approval.
+      <div id="uploadStatusNotice" class="update-notice" style="display:none;">
+        <strong>Upload Status:</strong>
+        <div id="uploadStatusMessage"></div>
+        <div id="uploadTimer" style="margin-top: 10px; font-weight: bold;"></div>
+      </div>
+      
+      <div id="uploadAllowedNotice" class="premium-notice" style="display:none;">
+        <strong>Upload Allowed:</strong> You can update your profile media now. Updates require admin approval.
       </div>
       
       <div class="media-section">

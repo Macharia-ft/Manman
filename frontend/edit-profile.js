@@ -22,6 +22,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       loadCurrentMedia(userData);
     }
 
+    // Check media upload status
+    await checkMediaUploadStatus();
+
     spinnerOverlay.style.display = "none";
   } catch (err) {
     console.error("Failed to load profile data:", err);
@@ -29,6 +32,84 @@ document.addEventListener('DOMContentLoaded', async () => {
     alert("❌ Failed to load profile data. Please try again.");
   }
 });
+
+// Check media upload status and show timer
+async function checkMediaUploadStatus() {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${config.API_BASE_URL}/api/user/media-upload-status`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (response.ok) {
+      const uploadStatus = await response.json();
+      updateUploadStatusUI(uploadStatus);
+      
+      if (!uploadStatus.canUpload && uploadStatus.remainingDays > 0) {
+        // Start countdown timer
+        startUploadCountdown(uploadStatus.nextUploadDate);
+      }
+    }
+  } catch (error) {
+    console.error('Error checking upload status:', error);
+  }
+}
+
+// Update UI based on upload status
+function updateUploadStatusUI(status) {
+  const statusNotice = document.getElementById('uploadStatusNotice');
+  const allowedNotice = document.getElementById('uploadAllowedNotice');
+  const statusMessage = document.getElementById('uploadStatusMessage');
+  const updateMediaButton = document.querySelector('button[onclick="updateMedia()"]');
+  const fileInputs = document.querySelectorAll('input[type="file"]');
+
+  if (status.canUpload) {
+    statusNotice.style.display = 'none';
+    allowedNotice.style.display = 'block';
+    updateMediaButton.disabled = false;
+    fileInputs.forEach(input => input.disabled = false);
+  } else {
+    statusNotice.style.display = 'block';
+    allowedNotice.style.display = 'none';
+    
+    const subscriptionText = status.subscription === 'premium' ? 'Premium users can update weekly' : 'Free users can update monthly';
+    statusMessage.innerHTML = `You can update your media again in ${status.remainingDays} days. ${subscriptionText}.`;
+    
+    updateMediaButton.disabled = true;
+    updateMediaButton.style.opacity = '0.5';
+    fileInputs.forEach(input => {
+      input.disabled = true;
+      input.style.opacity = '0.5';
+    });
+  }
+}
+
+// Start countdown timer
+function startUploadCountdown(nextUploadDate) {
+  const timerElement = document.getElementById('uploadTimer');
+  
+  function updateTimer() {
+    const now = new Date();
+    const timeRemaining = new Date(nextUploadDate) - now;
+    
+    if (timeRemaining <= 0) {
+      timerElement.innerHTML = 'You can now upload new media!';
+      // Refresh upload status
+      checkMediaUploadStatus();
+      return;
+    }
+    
+    const days = Math.floor(timeRemaining / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+    
+    timerElement.innerHTML = `Time remaining: ${days}d ${hours}h ${minutes}m ${seconds}s`;
+  }
+  
+  updateTimer();
+  setInterval(updateTimer, 1000);
+}
 
 function populateForm(userData) {
   // Populate all form fields with current user data

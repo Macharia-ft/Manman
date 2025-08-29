@@ -51,12 +51,11 @@ router.post('/mark-read/:userId', verifyToken, async (req, res) => {
     const { error } = await supabase
       .from('messages')
       .update({ 
-        is_read: true,
         read_at: new Date().toISOString()
       })
       .eq('sender_id', otherUserId)
       .eq('receiver_id', currentUserId)
-      .eq('is_read', false);
+      .is('read_at', null);
 
     if (error) {
       console.error('Error marking messages as read:', error);
