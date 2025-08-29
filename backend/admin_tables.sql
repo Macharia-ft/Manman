@@ -1,6 +1,5 @@
-
 -- Create table for pending media updates that need admin approval
-CREATE TABLE pending_media_updates (
+CREATE TABLE IF NOT EXISTS pending_media_updates (
     id SERIAL PRIMARY KEY,
     user_email VARCHAR(255) NOT NULL,
     pending_photo_url TEXT,
@@ -13,7 +12,7 @@ CREATE TABLE pending_media_updates (
 );
 
 -- Create table for pending premium subscriptions that need admin approval
-CREATE TABLE pending_premium_subscriptions (
+CREATE TABLE IF NOT EXISTS pending_premium_subscriptions (
     id SERIAL PRIMARY KEY,
     user_email VARCHAR(255) NOT NULL,
     payment_method VARCHAR(50) NOT NULL, -- 'mpesa', 'crypto'
@@ -35,13 +34,13 @@ ALTER TABLE users
 ADD COLUMN IF NOT EXISTS subscription VARCHAR(20) DEFAULT 'free'; -- 'free', 'premium'
 
 -- Create indexes for better performance
-CREATE INDEX idx_pending_media_status ON pending_media_updates(status);
-CREATE INDEX idx_pending_media_user ON pending_media_updates(user_email);
-CREATE INDEX idx_pending_subscriptions_status ON pending_premium_subscriptions(status);
-CREATE INDEX idx_pending_subscriptions_user ON pending_premium_subscriptions(user_email);
+CREATE INDEX IF NOT EXISTS idx_pending_media_status ON pending_media_updates(status);
+CREATE INDEX IF NOT EXISTS idx_pending_media_user ON pending_media_updates(user_email);
+CREATE INDEX IF NOT EXISTS idx_pending_subscriptions_status ON pending_premium_subscriptions(status);
+CREATE INDEX IF NOT EXISTS idx_pending_subscriptions_user ON pending_premium_subscriptions(user_email);
 
 -- Create chat messages table
-CREATE TABLE chat_messages (
+CREATE TABLE IF NOT EXISTS chat_messages (
     id SERIAL PRIMARY KEY,
     sender_id INTEGER NOT NULL,
     receiver_id INTEGER NOT NULL,
@@ -53,6 +52,6 @@ CREATE TABLE chat_messages (
 );
 
 -- Create indexes for chat messages
-CREATE INDEX idx_chat_sender ON chat_messages(sender_id);
-CREATE INDEX idx_chat_receiver ON chat_messages(receiver_id);
-CREATE INDEX idx_chat_sent_at ON chat_messages(sent_at);
+CREATE INDEX IF NOT EXISTS idx_chat_sender ON chat_messages(sender_id);
+CREATE INDEX IF NOT EXISTS idx_chat_receiver ON chat_messages(receiver_id);
+CREATE INDEX IF NOT EXISTS idx_chat_sent_at ON chat_messages(sent_at);

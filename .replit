@@ -8,7 +8,7 @@ channel = "stable-25_05"
 run = ["sh", "-c", "node backend/db/backend/db/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/server.js"]
 
 [workflows]
-runButton = "Project"
+runButton = "Start Backend"
 
 [[workflows.workflow]]
 name = "Start Server"
@@ -39,6 +39,15 @@ waitForPort = 5000
 
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[[workflows.workflow]]
+name = "Start Backend"
+author = 47017255
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend && node server.js"
 
 [[ports]]
 localPort = 5000

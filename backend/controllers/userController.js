@@ -853,24 +853,17 @@ module.exports = {
       const { email } = req.params;
       console.log(`📦 Fetching profile photo for: ${email}`);
 
-      const { data, error } = await supabase
+      const { data: user, error } = await supabase
         .from('users')
         .select('profile_photo_url')
         .eq('email', email)
         .single();
 
-      if (error) {
-        console.error('❌ Supabase error:', error);
-        return res.status(404).json({ error: 'Profile photo not found' });
-      }
-
-      if (!data) {
-        console.log('❌ No data found for user:', email);
+      if (error || !user) {
         return res.status(404).json({ error: 'User not found' });
       }
 
-      console.log('✅ Profile photo URL:', data.profile_photo_url);
-      res.json({ profile_photo_url: data.profile_photo_url });
+      res.json({ profile_photo_url: user.profile_photo_url });
     } catch (error) {
       console.error('❌ Error fetching profile photo:', error);
       res.status(500).json({ error: 'Server error' });
@@ -1002,22 +995,7 @@ module.exports = {
       // Get sender info
       const { data: sender, error: senderError } = await supabase
         .from('users')
-        .select('*')
-        .eq('email', senderEmail)
-        .single();
-
-      if (senderError || !sender) {
-        return res.status(404).json({ success: false, message: "Sender not found" });
-      }
-
-      res.json({ success: true, message: "Match request sent successfully" });
-    } catch (error) {
-      console.error("Send match request error:", error);
-      res.status(500).json({ success: false, message: "Server error" });
-    }
-  },
-
-  uploadToCloudinary: uploadToCloudinaryelect('id, full_name')
+        .select('id, full_name')
         .eq('email', senderEmail)
         .single();
 
