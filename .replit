@@ -5,7 +5,8 @@ run = "node backend/db/backend/db/backend/backend/backend/backend/backend/backen
 channel = "stable-25_05"
 
 [deployment]
-run = ["sh", "-c", "node backend/db/backend/db/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/server.js"]
+run = ["node", "backend/server.js"]
+deploymentTarget = "autoscale"
 
 [workflows]
 runButton = "Start Backend"
