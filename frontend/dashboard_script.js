@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const photoUrl = user.profile_photo_url && user.profile_photo_url.trim() !== '' ? user.profile_photo_url : 'https://via.placeholder.com/100?text=No+Photo';
       const videoUrl = user.profile_video_url && user.profile_video_url.trim() !== '' ? user.profile_video_url : null;
       const countryOfBirth = user.country_of_birth || 'Unknown';
-      const matchScore = user.matchScore || '0%';
+      const matchScore = user.matchScore !== undefined ? `${user.matchScore}%` : '0%';
 
       const userCard = document.createElement("div");
       userCard.classList.add("profile-card");

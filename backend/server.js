@@ -310,8 +310,10 @@ app.get('/api/users/:email', async (req, res) => {
     }
 
     // Calculate match scores only for pre-filtered users
+    const totalAttributes = 18; // Total number of attributes being compared
     const matchedUsers = preFilteredUsers.map(user => {
-      const matchScore = calculateMatchScore(user, currentUser);
+      const rawScore = calculateMatchScore(user, currentUser);
+      const matchScore = Math.round((rawScore / totalAttributes) * 100); // Convert to percentage
       return { ...user, matchScore };
     });
 
@@ -1047,7 +1049,11 @@ app.post('/api/payment/mpesa/verify', upload.single('payment_proof'), async (req
     }
 
     // Upload proof to Cloudinary
-    const proofUpload = await userController.uploadToCloudinary(proofFile.path, 'payment_proofs', proofFile.mimetype);
+    const cloudinary = require('cloudinary').v2;
+    const proofUpload = await cloudinary.uploader.upload(proofFile.path, {
+      folder: 'payment_proofs',
+      resource_type: 'auto'
+    });
 
     // Store in pending subscriptions
     const { error } = await supabase
@@ -1055,7 +1061,7 @@ app.post('/api/payment/mpesa/verify', upload.single('payment_proof'), async (req
       .insert({
         user_email: userEmail,
         payment_method: 'mpesa',
-        payment_proof_url: proofUpload.url,
+        payment_proof_url: proofUpload.secure_url,
         amount: parseFloat(amount),
         currency: 'USD',
         transaction_reference: transaction_id,
@@ -1097,7 +1103,11 @@ app.post('/api/payment/crypto/verify', upload.single('transaction_proof'), async
     }
 
     // Upload proof to Cloudinary
-    const proofUpload = await userController.uploadToCloudinary(proofFile.path, 'payment_proofs', proofFile.mimetype);
+    const cloudinary = require('cloudinary').v2;
+    const proofUpload = await cloudinary.uploader.upload(proofFile.path, {
+      folder: 'payment_proofs',
+      resource_type: 'auto'
+    });
 
     // Store in pending subscriptions
     const { error } = await supabase
@@ -1105,7 +1115,7 @@ app.post('/api/payment/crypto/verify', upload.single('transaction_proof'), async
       .insert({
         user_email: userEmail,
         payment_method: 'crypto',
-        payment_proof_url: proofUpload.url,
+        payment_proof_url: proofUpload.secure_url,
         amount: parseFloat(amount),
         currency: crypto_type,
         transaction_reference: transaction_id,
