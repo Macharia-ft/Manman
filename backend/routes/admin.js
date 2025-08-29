@@ -2,10 +2,34 @@ const express = require("express");
 const router = express.Router();
 const adminController = require("../controllers/adminController");
 const { createClient } = require("@supabase/supabase-js");
+const jwt = require("jsonwebtoken");
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Admin authentication middleware
+const authenticateAdmin = (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    
+    if (!token) {
+      return res.status(401).json({ success: false, message: "Missing token" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    if (decoded.role !== 'admin') {
+      return res.status(403).json({ success: false, message: "Admin access required" });
+    }
+
+    req.admin = decoded;
+    next();
+  } catch (error) {
+    console.error('Admin auth error:', error);
+    return res.status(401).json({ success: false, message: "Invalid token" });
+  }
+};
 
 // Admin login
 router.post('/login', async (req, res) => {
@@ -65,18 +89,18 @@ router.post('/login', async (req, res) => {
 });
 
 // Get all users (admin only)
-router.get("/admin/users", adminController.getAllUsers);
+router.get("/users", authenticateAdmin, adminController.getAllUsers);
 
 // Update user status (admin only)
-router.post("/admin/user/status", adminController.updateUserStatus);
+router.post("/user/status", authenticateAdmin, adminController.updateUserStatus);
 
 // Get user by ID (admin only)
-router.get("/admin/users/:id", adminController.getUserById);
+router.get("/users/:id", authenticateAdmin, adminController.getUserById);
 
 // Grant premium access to a user (admin only)
-router.post("/admin/grant-premium", adminController.grantPremiumAccess);
+router.post("/grant-premium", authenticateAdmin, adminController.grantPremiumAccess);
 
 // Remove premium access from a user (admin only)
-router.post("/admin/remove-premium", adminController.removePremiumAccess);
+router.post("/remove-premium", authenticateAdmin, adminController.removePremiumAccess);
 
 module.exports = router;
