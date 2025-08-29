@@ -183,31 +183,35 @@ body {
   color: white;
 }
 
-/* Profile Cards */
+/* Profile Cards - Mobile First */
 .profiles-list {
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
+  width: 100%;
 }
 
-/* Desktop: Two columns */
-@media (min-width: 600px) {
+/* Two columns for larger mobile screens and tablets */
+@media screen and (min-width: 480px) {
   .profiles-list {
     grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px;
   }
 }
 
-/* Ensure two columns on desktop screens */
-@media (min-width: 768px) {
+/* Desktop: Two columns with better spacing */
+@media screen and (min-width: 768px) {
   .profiles-list {
     grid-template-columns: repeat(2, 1fr) !important;
+    gap: 15px;
   }
 }
 
-/* Large desktop screens */
-@media (min-width: 1024px) {
+/* Large screens: maintain two columns with more spacing */
+@media screen and (min-width: 1200px) {
   .profiles-list {
     grid-template-columns: repeat(2, 1fr) !important;
+    gap: 20px;
   }
 }
 .profile-card {
