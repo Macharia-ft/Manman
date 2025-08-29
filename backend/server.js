@@ -797,6 +797,35 @@ app.post("/api/users/mutual-match", async (req, res) => {
 
     // Create interaction for current user accepting the other user
     const { error: currentUserError } = await supabase
+
+// Get user by email endpoint
+app.get('/api/user', async (req, res) => {
+  try {
+    const { email, id } = req.query;
+    
+    let query = supabase.from('users').select('*');
+    
+    if (email) {
+      query = query.eq('email', email);
+    } else if (id) {
+      query = query.eq('id', id);
+    } else {
+      return res.status(400).json({ error: 'Email or ID parameter required' });
+    }
+    
+    const { data, error } = await query.single();
+    
+    if (error) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
       .from('user_interactions')
       .upsert({
         current_user_id: currentUserId,

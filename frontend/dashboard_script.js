@@ -202,7 +202,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       const videoUrl = user.profile_video_url && user.profile_video_url.trim() !== '' ? user.profile_video_url : null;
       const countryOfBirth = user.country_of_birth || 'Unknown';
       const matchScore = user.matchScore || '0%';
-      const foundMatch = user.found_match;
 
       const userCard = document.createElement("div");
       userCard.classList.add("profile-card");
@@ -216,7 +215,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             <h3>${user.full_name || 'Unknown Name'}</h3>
             <p>${age} yrs</p>
             <p>${countryOfBirth}</p>
-            ${foundMatch ? '<p style="color: red; font-weight: bold;">User Found Match</p>' : ''}
           </div>
           <span class="score">${matchScore}</span>
         </div>
@@ -234,14 +232,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (activeSection === "all") {
         actions.innerHTML = `
-          <button class="select-btn" ${foundMatch ? 'disabled' : ''}>
-            ${foundMatch ? 'Found Match' : 'Select'}
-          </button>
+          <button class="select-btn">Select</button>
           <button class="remove-btn">Remove</button>
         `;
 
         const selectButton = actions.querySelector(".select-btn");
-        if (selectButton && !foundMatch) {
+        if (selectButton) {
           selectButton.addEventListener("click", async (event) => {
             if (selectButton.disabled) return;
             selectButton.disabled = true;
@@ -265,14 +261,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       } else if (activeSection === "selected") {
         actions.innerHTML = `
-          <button class="select-btn" ${foundMatch ? 'disabled' : ''}>
-            ${foundMatch ? 'Found Match' : 'Cancel Selection'}
-          </button>
+          <button class="select-btn">Cancel Selection</button>
           <button class="remove-btn">Remove</button>
         `;
 
         const cancelButton = actions.querySelector(".select-btn");
-        if (cancelButton && !foundMatch) {
+        if (cancelButton) {
           cancelButton.addEventListener("click", async () => {
             await moveProfile(user, 'selected', user.originalLocation || 'all', null);
           });
@@ -287,14 +281,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       } else if (activeSection === "selected-you") {
         actions.innerHTML = `
-          <button class="select-btn" ${foundMatch ? 'disabled' : ''}>
-            ${foundMatch ? 'Found Match' : 'Accept'}
-          </button>
+          <button class="select-btn">Accept</button>
           <button class="remove-btn">Reject</button>
         `;
 
         const acceptButton = actions.querySelector(".select-btn");
-        if (acceptButton && !foundMatch) {
+        if (acceptButton) {
           acceptButton.addEventListener("click", async (event) => {
             if (acceptButton.disabled) return;
             acceptButton.disabled = true;
@@ -318,14 +310,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       } else if (activeSection === "accepted") {
         actions.innerHTML = `
-          <button class="match-btn" ${foundMatch ? 'disabled' : ''}>
-            ${foundMatch ? 'Found Match' : 'Matched'}
-          </button>
+          <button class="match-btn">Matched</button>
           <button class="remove-btn">Cancel Match</button>
         `;
 
         const matchedButton = actions.querySelector(".match-btn");
-        if (matchedButton && !foundMatch) {
+        if (matchedButton) {
           matchedButton.addEventListener("click", async (event) => {
             if (matchedButton.disabled) return;
             matchedButton.disabled = true;

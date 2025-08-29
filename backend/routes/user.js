@@ -92,7 +92,7 @@ router.get("/subscription-status", async (req, res) => {
   }
 });
 
-// Add conversations endpoint
+// Add conversations endpoint - get from accepted mutual matches
 router.get("/conversations", async (req, res) => {
   try {
     const jwt = require("jsonwebtoken");
@@ -123,8 +123,8 @@ router.get("/conversations", async (req, res) => {
 
     const currentUserId = currentUser.id;
 
-    // Get all mutual matches (both users have accepted each other)
-    const { data: mutualMatches, error: matchError } = await supabase
+    // Get all users that current user has accepted
+    const { data: acceptedByCurrentUser, error: acceptedError } = await supabase
       .from('user_interactions')
       .select(`
         target_user_id,
@@ -133,14 +133,14 @@ router.get("/conversations", async (req, res) => {
       .eq('current_user_id', currentUserId)
       .eq('action', 'accepted');
 
-    if (matchError) {
-      console.error('Error fetching mutual matches:', matchError);
+    if (acceptedError) {
+      console.error('Error fetching accepted matches:', acceptedError);
       return res.json([]);
     }
 
-    // Filter to only include users who have also accepted the current user
+    // Filter to only include mutual matches (both users accepted each other)
     const conversations = [];
-    for (const match of mutualMatches) {
+    for (const match of acceptedByCurrentUser) {
       const { data: reverseMatch, error: reverseError } = await supabase
         .from('user_interactions')
         .select('id')
@@ -151,13 +151,35 @@ router.get("/conversations", async (req, res) => {
 
       if (!reverseError && reverseMatch) {
         const user = match.users;
+        
+        // Get last message and unread count for this conversation
+        const { data: messages, error: msgError } = await supabase
+          .from('messages')
+          .select('*')
+          .or(`and(sender_id.eq.${currentUserId},receiver_id.eq.${user.id}),and(sender_id.eq.${user.id},receiver_id.eq.${currentUserId})`)
+          .order('sent_at', { ascending: false })
+          .limit(1);
+
+        let lastMessage = 'Start a conversation...';
+        if (messages && messages.length > 0) {
+          lastMessage = messages[0].message;
+        }
+
+        // Count unread messages from this user
+        const { data: unreadMessages } = await supabase
+          .from('messages')
+          .select('id')
+          .eq('sender_id', user.id)
+          .eq('receiver_id', currentUserId)
+          .eq('read', false);
+
         conversations.push({
           user_id: user.id,
           user_name: user.full_name,
           profile_photo_url: user.profile_photo_url,
-          last_message: 'Start a conversation...',
-          last_message_time: null,
-          unread_count: 0
+          last_message: lastMessage,
+          last_message_time: messages && messages.length > 0 ? messages[0].sent_at : null,
+          unread_count: unreadMessages ? unreadMessages.length : 0
         });
       }
     }

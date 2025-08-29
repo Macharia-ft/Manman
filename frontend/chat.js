@@ -195,6 +195,18 @@ function displayMessage(message, type) {
 async function loadMessages() {
   try {
     const token = localStorage.getItem("token");
+    const currentUserEmail = getCurrentUserEmailFromToken();
+
+    // Get current user ID
+    const currentUserResponse = await fetch(`${config.API_BASE_URL}/api/user?email=${currentUserEmail}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    let currentUserIdFromDB = null;
+    if (currentUserResponse.ok) {
+      const currentUserData = await currentUserResponse.json();
+      currentUserIdFromDB = currentUserData.id;
+    }
 
     const response = await fetch(`${config.API_BASE_URL}/api/messages/conversation/${currentUserId}`, {
       headers: {
@@ -216,20 +228,27 @@ async function loadMessages() {
           const messageDiv = document.createElement('div');
           messageDiv.classList.add('message');
 
-          // Add sender or receiver class for proper alignment
-          if (msg.sender_id === currentUserId) {
-            messageDiv.classList.add('sender');
+          // Determine if message is from current user or other user
+          const isCurrentUser = msg.sender_id === currentUserIdFromDB;
+          
+          if (isCurrentUser) {
+            messageDiv.classList.add('sent');
           } else {
-            messageDiv.classList.add('receiver');
+            messageDiv.classList.add('received');
           }
 
           messageDiv.innerHTML = `
-          <div class="message-content">${msg.message}</div>
-          <div class="message-time">${new Date(msg.sent_at).toLocaleTimeString()}</div>
-        `;
+            <div class="message-bubble ${isCurrentUser ? 'sent-bubble' : 'received-bubble'}">
+              <div class="message-content">${msg.message}</div>
+              <div class="message-time">${new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+            </div>
+          `;
 
           chatMessages.appendChild(messageDiv);
         });
+        
+        // Scroll to bottom
+        chatMessages.scrollTop = chatMessages.scrollHeight;
       }
     }
   } catch (error) {

@@ -267,7 +267,8 @@ async function processMpesaPayment() {
       closePaymentModal();
       setTimeout(() => loadCurrentSubscription(), 1000);
     } else {
-      alert('Payment verification failed. Please check your transaction details.');
+      const errorData = await response.json();
+      alert('Payment submission failed: ' + (errorData.message || 'Please check your transaction details and try again.'));
     }
   } catch (error) {
     console.error('M-Pesa payment error:', error);
@@ -312,7 +313,8 @@ async function processCryptoPayment() {
       closePaymentModal();
       setTimeout(() => loadCurrentSubscription(), 1000);
     } else {
-      alert('Payment verification failed. Please check your transaction details.');
+      const errorData = await response.json();
+      alert('Payment submission failed: ' + (errorData.message || 'Please check your transaction details and try again.'));
     }
   } catch (error) {
     console.error('Crypto payment error:', error);

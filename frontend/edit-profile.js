@@ -64,6 +64,37 @@ function loadCurrentMedia(userData) {
   } else {
     currentVideo.style.display = 'none';
   }
+
+  // Add file input change listeners for preview
+  const photoInput = document.getElementById('profilePhoto');
+  const videoInput = document.getElementById('profileVideo');
+
+  if (photoInput) {
+    photoInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          currentPhoto.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  if (videoInput) {
+    videoInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file && file.type.startsWith('video/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          currentVideo.src = e.target.result;
+          currentVideo.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
 }
 
 function openFullscreen(src, type) {

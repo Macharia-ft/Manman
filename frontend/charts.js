@@ -20,19 +20,85 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadMatches() {
   try {
     const token = localStorage.getItem("token");
-    const response = await fetch(`${config.API_BASE_URL}/api/user/conversations`, {
+    
+    // Get current user email from token
+    const currentUser = getCurrentUserFromToken();
+    if (!currentUser) {
+      throw new Error('Unable to get current user');
+    }
+
+    // Fetch accepted profiles (mutual matches)
+    const response = await fetch(`${config.API_BASE_URL}/api/users/interactions/${currentUser.email}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
 
     if (response.ok) {
-      const matches = await response.json();
-      displayMatches(matches);
+      const interactions = await response.json();
+      const acceptedMatches = interactions.filter(u => u.action === 'accepted');
+      
+      // Load conversation data for each match
+      const matchesWithConversations = await Promise.all(
+        acceptedMatches.map(async (match) => {
+          try {
+            const conversationResponse = await fetch(`${config.API_BASE_URL}/api/messages/conversation/${match.id}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            let lastMessage = 'Start a conversation...';
+            let unreadCount = 0;
+            
+            if (conversationResponse.ok) {
+              const conversationData = await conversationResponse.json();
+              const messages = conversationData.messages || [];
+              if (messages.length > 0) {
+                lastMessage = messages[messages.length - 1].message;
+                unreadCount = messages.filter(msg => 
+                  msg.sender_id === match.id && !msg.read
+                ).length;
+              }
+            }
+            
+            return {
+              user_id: match.id,
+              user_name: match.full_name,
+              profile_photo_url: match.profile_photo_url,
+              last_message: lastMessage,
+              unread_count: unreadCount
+            };
+          } catch (error) {
+            console.error('Error loading conversation for match:', match.id, error);
+            return {
+              user_id: match.id,
+              user_name: match.full_name,
+              profile_photo_url: match.profile_photo_url,
+              last_message: 'Start a conversation...',
+              unread_count: 0
+            };
+          }
+        })
+      );
+      
+      displayMatches(matchesWithConversations);
     } else {
       throw new Error('Failed to load matches');
     }
   } catch (error) {
     console.error('Error loading matches:', error);
     document.getElementById('noMatches').style.display = 'block';
+  }
+}
+
+function getCurrentUserFromToken() {
+  const token = localStorage.getItem("token");
+  if (!token) return null;
+  
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    return JSON.parse(atob(parts[1]));
+  } catch (e) {
+    console.error("Error decoding token:", e);
+    return null;
   }
 }
 
