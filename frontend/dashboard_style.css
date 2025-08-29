@@ -222,11 +222,21 @@ body {
 .score {
   margin-left: auto;
   font-weight: bold;
-  background-color: #4aa3ff;
-  color: white;
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 13px;
+  min-width: 40px;
+  text-align: center;
+}
+
+.score[data-score="N/A"] {
+  background-color: #6c757d;
+  color: white;
+}
+
+.score:not([data-score="N/A"]) {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 50%, #007bff 100%);
+  color: white;
 }
 
 /* Video block */

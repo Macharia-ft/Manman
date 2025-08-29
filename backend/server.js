@@ -483,6 +483,38 @@ app.get('/api/users/selected-you/:email', async (req, res) => {
   }
 });
 
+// ✅ API route to get match scores for a user
+app.get('/api/users/match-scores/:email', async (req, res) => {
+  const currentUserEmail = req.params.email;
+
+  try {
+    const currentUserId = await getUserIdByEmail(currentUserEmail);
+    const currentUser = await getUserById(currentUserId);
+
+    // Get all users except current user
+    const { data: allUsers, error } = await supabase
+      .from('users')
+      .select('*')
+      .neq('id', currentUserId);
+
+    if (error) {
+      throw new Error('Error fetching users for match scores');
+    }
+
+    const matchScores = {};
+    allUsers.forEach(user => {
+      const score = calculateMatchScore(user, currentUser);
+      const totalAttributes = 18;
+      matchScores[user.id] = Math.round((score / totalAttributes) * 100);
+    });
+
+    res.json(matchScores);
+  } catch (error) {
+    console.error("Error calculating match scores:", error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // ✅ API route to send match request
 app.post('/api/users/match/:email', async (req, res) => {
   const currentUserEmail = req.params.email;

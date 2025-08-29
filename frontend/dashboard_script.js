@@ -172,6 +172,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       matchScore: matchScores[profile.id] || 0
     }));
 
+    // Sort all profile arrays by match score in descending order
+    allProfiles.sort((a, b) => b.matchScore - a.matchScore);
+    selectedProfiles.sort((a, b) => b.matchScore - a.matchScore);
+    selectedYouProfiles.sort((a, b) => b.matchScore - a.matchScore);
+    acceptedProfiles.sort((a, b) => b.matchScore - a.matchScore);
+
 
     // Hide spinner and show content
     if (loadingSpinner) loadingSpinner.style.display = 'none';
@@ -230,7 +236,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const photoUrl = user.profile_photo_url && user.profile_photo_url.trim() !== '' ? user.profile_photo_url : 'https://via.placeholder.com/100?text=No+Photo';
       const videoUrl = user.profile_video_url && user.profile_video_url.trim() !== '' ? user.profile_video_url : null;
       const countryOfBirth = user.country_of_birth || 'Unknown';
-      const matchScore = user.matchScore !== undefined ? `${user.matchScore}%` : '0%';
+      const matchScore = user.matchScore !== undefined && user.matchScore > 0 ? `${user.matchScore}%` : 'N/A';
 
       const userCard = document.createElement("div");
       userCard.classList.add("profile-card");
@@ -245,7 +251,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <p>${age} yrs</p>
             <p>${countryOfBirth}</p>
           </div>
-          <span class="score">${matchScore}</span>
+          <span class="score" data-score="${matchScore}">${matchScore}</span>
         </div>
         <div class="profile-video">
           ${videoUrl ? `<video src="${videoUrl}" controls preload="metadata" style="max-width: 100%; height: auto;"
