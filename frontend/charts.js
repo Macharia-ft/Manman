@@ -116,13 +116,7 @@ function displayMatches(matches) {
   matches.forEach(match => {
     const matchCard = document.createElement('div');
     matchCard.className = 'match-card';
-    matchCard.onclick = async () => {
-      // Clear unread count immediately for better UX
-      if (match.unread_count > 0) {
-        match.unread_count = 0;
-        displayMatches([match]); // Refresh this card
-      }
-      
+    matchCard.onclick = () => {
       window.location.href = `chat.html?user=${match.user_id}&name=${encodeURIComponent(match.user_name)}`;
     };
 

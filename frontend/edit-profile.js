@@ -20,7 +20,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       const userData = await res.json();
       populateForm(userData);
       loadCurrentMedia(userData);
-      await checkMediaUploadEligibility(userData);
     }
 
     spinnerOverlay.style.display = "none";
@@ -180,54 +179,6 @@ async function updatePreferences() {
   }
 }
 
-async function checkMediaUploadEligibility(userData) {
-  try {
-    const token = localStorage.getItem("token");
-    const response = await fetch(`${config.API_BASE_URL}/api/user/media-upload-eligibility`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    if (response.ok) {
-      const eligibilityData = await response.json();
-      updateMediaUploadUI(eligibilityData, userData.subscription || 'free');
-    }
-  } catch (error) {
-    console.error('Error checking media upload eligibility:', error);
-  }
-}
-
-function updateMediaUploadUI(eligibilityData, subscription) {
-  const updateNotice = document.getElementById('updateNotice');
-  const updateMediaBtn = document.querySelector('button[onclick="updateMedia()"]');
-  
-  if (!eligibilityData.canUpload) {
-    const daysRemaining = eligibilityData.daysUntilNextUpload;
-    const isFreePlan = subscription === 'free';
-    const period = isFreePlan ? 'month' : 'week';
-    
-    updateNotice.innerHTML = `
-      <strong>Upload Restriction:</strong> You can only update media once per ${period}. 
-      <br><strong>Next upload available in: ${daysRemaining} days</strong>
-      ${isFreePlan ? '<br><em>Upgrade to Premium for weekly uploads!</em>' : ''}
-    `;
-    updateNotice.style.backgroundColor = '#ffebee';
-    updateNotice.style.borderColor = '#f44336';
-    
-    if (updateMediaBtn) {
-      updateMediaBtn.disabled = true;
-      updateMediaBtn.style.opacity = '0.5';
-      updateMediaBtn.style.cursor = 'not-allowed';
-    }
-  } else {
-    const isFreePlan = subscription === 'free';
-    const period = isFreePlan ? 'month' : 'week';
-    
-    updateNotice.innerHTML = `
-      <strong>Upload Available:</strong> You can update your media once per ${period}. Updates require admin approval.
-    `;
-  }
-}
-
 async function updateMedia() {
   const photoFile = document.getElementById('profilePhoto').files[0];
   const videoFile = document.getElementById('profileVideo').files[0];
@@ -242,23 +193,6 @@ async function updateMedia() {
   if (!token) {
     alert("Session expired. Please log in again.");
     return;
-  }
-
-  // Check eligibility before proceeding
-  try {
-    const eligibilityResponse = await fetch(`${config.API_BASE_URL}/api/user/media-upload-eligibility`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    if (eligibilityResponse.ok) {
-      const eligibilityData = await eligibilityResponse.json();
-      if (!eligibilityData.canUpload) {
-        alert(`❌ You can only update media once per ${eligibilityData.subscription === 'free' ? 'month' : 'week'}. Next upload available in ${eligibilityData.daysUntilNextUpload} days.`);
-        return;
-      }
-    }
-  } catch (error) {
-    console.error('Error checking eligibility:', error);
   }
 
   spinnerOverlay.style.display = "flex";
@@ -281,8 +215,7 @@ async function updateMedia() {
 
     if (response.ok && result.success) {
       alert("✅ Media update request submitted successfully! Admin will review and approve your changes within 24 hours.");
-      // Refresh the page to update restrictions
-      window.location.reload();
+      // Don't reload as changes are pending approval
     } else {
       alert("❌ " + (result.message || "Error updating media."));
     }
