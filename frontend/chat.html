@@ -187,18 +187,23 @@
       word-wrap: break-word;
     }
 
-    .message.sender .message-bubble {
-      background: linear-gradient(135deg, #007BFF, #0056b3);
+    .message.sender .message-bubble,
+    .message.sent .message-bubble {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       border-bottom-right-radius: 5px; /* Tail of the bubble */
       margin-left: auto; /* Push bubble to the right */
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
     }
 
-    .message.receiver .message-bubble {
-      background: #e9ecef;
-      color: #333;
+    .message.receiver .message-bubble,
+    .message.received .message-bubble {
+      background: linear-gradient(135deg, #f1f3f4 0%, #ffffff 100%);
+      color: #2c3e50;
+      border: 1px solid #e1e8ed;
       border-bottom-left-radius: 5px; /* Tail of the bubble */
       margin-right: auto; /* Push bubble to the left */
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
     .message-time {

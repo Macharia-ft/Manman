@@ -124,7 +124,7 @@ app.get("/api/admin/media-updates/stats", async (req, res) => {
   }
 });
 
-app.get("/api/admin/premium-approvals", async (req, res) => {
+app.get("/api/admin/premium-subscriptions", async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
     if (!token) {
@@ -152,6 +152,48 @@ app.get("/api/admin/premium-approvals", async (req, res) => {
     res.json(data || []);
   } catch (error) {
     console.error("Premium approvals error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+app.get("/api/admin/premium-approvals/stats", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ success: false, message: "Missing token" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.role !== 'admin') {
+      return res.status(403).json({ success: false, message: "Admin access required" });
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data: pending } = await supabase
+      .from('pending_premium_subscriptions')
+      .select('id')
+      .eq('status', 'pending');
+
+    const { data: approved } = await supabase
+      .from('pending_premium_subscriptions')
+      .select('id')
+      .eq('status', 'approved')
+      .gte('reviewed_at', today);
+
+    const { data: rejected } = await supabase
+      .from('pending_premium_subscriptions')
+      .select('id')
+      .eq('status', 'rejected')
+      .gte('reviewed_at', today);
+
+    res.json({
+      pending: pending?.length || 0,
+      approved: approved?.length || 0,
+      rejected: rejected?.length || 0
+    });
+  } catch (error) {
+    console.error("Premium stats error:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
@@ -1371,6 +1413,85 @@ app.get('/api/user', async (req, res) => {
   } catch (error) {
     console.error('Database query error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ✅ API route to get user subscription status
+app.get('/api/user/subscription-status', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ success: false, message: "Missing token" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userEmail = decoded.email;
+
+    // Get user subscription from users table
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('subscription')
+      .eq('email', userEmail)
+      .single();
+
+    if (error) {
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+
+    res.json({ 
+      subscription: user?.subscription || 'free',
+      isPremium: user?.subscription === 'premium'
+    });
+  } catch (error) {
+    console.error('Subscription status error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// ✅ API route to get detailed user subscription info
+app.get('/api/user/subscription', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ success: false, message: "Missing token" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userEmail = decoded.email;
+
+    // Get user data
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id, subscription')
+      .eq('email', userEmail)
+      .single();
+
+    if (userError) {
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+
+    // Check for active subscription
+    const { data: subscription, error: subError } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .order('end_date', { ascending: false })
+      .limit(1)
+      .single();
+
+    const currentPlan = user?.subscription || 'free';
+    const isActive = subscription && new Date(subscription.end_date) > new Date();
+
+    res.json({
+      plan: currentPlan,
+      isActive: isActive,
+      subscription: subscription,
+      endDate: subscription?.end_date
+    });
+  } catch (error) {
+    console.error('Subscription info error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 

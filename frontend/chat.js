@@ -237,10 +237,21 @@ async function loadMessages() {
             messageDiv.classList.add('received');
           }
 
+          const messageTime = new Date(msg.sent_at);
+          const timeString = messageTime.toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: true
+          });
+          const dateString = messageTime.toLocaleDateString([], {
+            month: 'short',
+            day: 'numeric'
+          });
+          
           messageDiv.innerHTML = `
             <div class="message-bubble ${isCurrentUser ? 'sent-bubble' : 'received-bubble'}">
               <div class="message-content">${msg.message}</div>
-              <div class="message-time">${new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+              <div class="message-time">${dateString} at ${timeString}</div>
             </div>
           `;
 
