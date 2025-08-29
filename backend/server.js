@@ -35,6 +35,9 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+// ✅ Serve static files FIRST so frontend pages are accessible
+app.use(express.static('frontend'));
+
 // ✅ API routes
 app.use("/api", authRoutes);
 app.use("/api", uploadIdentityRoute);
@@ -985,8 +988,7 @@ app.post('/api/admin/premium-subscriptions/review', async (req, res) => {
   }
 });
 
-// Serve the profile page (frontend)
-app.use(express.static('frontend'));  // Serve static files (HTML, CSS, JS)
+// Static files already served above
 
 // Endpoint to fetch user data based on ID
 app.get('/api/user', async (req, res) => {
@@ -1024,8 +1026,8 @@ app.get('/api/user', async (req, res) => {
   }
 });
 
-// ✅ Root test route
-app.get("/", (req, res) => {
+// ✅ API health check route (moved from root to avoid conflicts)
+app.get("/api/health", (req, res) => {
   res.send("✅ Takeyours Identity Verification API is running.");
 });
 
