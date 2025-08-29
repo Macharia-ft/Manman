@@ -46,7 +46,7 @@ async function uploadToCloudinary(filePath, folder, mimeType) {
 
 
 module.exports = {
-  uploadToCloudinary: uploadToCloudinary,
+  uploadToCloudinary,
   
   uploadIdentity: async (req, res) => {
     console.log("📦 Incoming /api/upload-identity request...");

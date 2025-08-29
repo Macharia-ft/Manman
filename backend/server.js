@@ -809,27 +809,104 @@ app.post('/api/users/select/:email', async (req, res) => {
   }
 });
 
+// Get user subscription endpoint  
+app.get("/api/user/subscription", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.json({ plan: 'free', status: 'active' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const email = decoded.email;
+
+    // Get user data
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, subscription')
+      .eq('email', email)
+      .single();
+
+    if (error || !user) {
+      return res.json({ plan: 'free', status: 'active' });
+    }
+
+    // Check for active subscription
+    const { data: activeSubscription, error: subError } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .gte('end_date', new Date().toISOString())
+      .single();
+
+    if (activeSubscription) {
+      res.json({ 
+        plan: activeSubscription.plan,
+        status: 'active',
+        startDate: activeSubscription.start_date,
+        endDate: activeSubscription.end_date
+      });
+    } else {
+      res.json({ plan: 'free', status: 'active' });
+    }
+  } catch (error) {
+    console.error("Error fetching subscription:", error);
+    res.json({ plan: 'free', status: 'active' });
+  }
+});
+
 // Get user subscription status
 app.get("/api/user/subscription-status", async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.json({ subscription: 'free' });
+    }
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const email = decoded.email;
 
-    const { data, error } = await supabase
+    // Get user data
+    const { data: user, error } = await supabase
       .from('users')
-      .select('subscription')
+      .select('id, subscription')
       .eq('email', email)
       .single();
 
-    if (error) {
-      return res.status(500).json({ message: "Server error" });
+    if (error || !user) {
+      return res.json({ subscription: 'free' });
     }
 
-    res.json({ subscription: data?.subscription || 'free' });
+    // Check for active subscription in subscriptions table
+    const { data: activeSubscription, error: subError } = await supabase
+      .from('subscriptions')
+      .select('plan, status, end_date')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .gte('end_date', new Date().toISOString())
+      .single();
+
+    if (activeSubscription) {
+      // Update users table with current subscription status
+      await supabase
+        .from('users')
+        .update({ subscription: activeSubscription.plan })
+        .eq('id', user.id);
+      
+      res.json({ subscription: activeSubscription.plan });
+    } else {
+      // Update users table to free if no active subscription
+      await supabase
+        .from('users')
+        .update({ subscription: 'free' })
+        .eq('id', user.id);
+      
+      res.json({ subscription: 'free' });
+    }
   } catch (error) {
     console.error("Error checking subscription:", error);
-    res.status(500).json({ message: "Server error" });
+    res.json({ subscription: 'free' });
   }
 });
 
@@ -1146,19 +1223,28 @@ app.post('/api/admin/premium-subscriptions/review', async (req, res) => {
           .update({ subscription: 'premium' })
           .eq('email', subscription.user_email);
 
-        // Create active subscription record
-        const endDate = new Date();
-        endDate.setDate(endDate.getDate() + 30); // 30 days premium
+        // Get user ID first
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', subscription.user_email)
+          .single();
 
-        await supabase
-          .from('subscriptions')
-          .insert({
-            user_id: subscription.user_email,
-            plan: subscription.plan || 'premium',
-            status: 'active',
-            start_date: new Date().toISOString(),
-            end_date: endDate.toISOString()
-          });
+        if (userData) {
+          // Create active subscription record
+          const endDate = new Date();
+          endDate.setDate(endDate.getDate() + 30); // 30 days premium
+
+          await supabase
+            .from('subscriptions')
+            .insert({
+              user_id: userData.id,
+              plan: subscription.plan || 'premium',
+              status: 'active',
+              start_date: new Date().toISOString(),
+              end_date: endDate.toISOString()
+            });
+        }
       }
     }
 
