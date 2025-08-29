@@ -17,16 +17,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
-// Refresh matches when page becomes visible (returning from chat)
-window.addEventListener('visibilitychange', async () => {
-  if (!document.hidden) {
-    // Page is now visible, refresh matches to update unread counts
-    setTimeout(async () => {
-      await loadMatches();
-    }, 500);
-  }
-});
-
 async function loadMatches() {
   try {
     const token = localStorage.getItem("token");
@@ -149,12 +139,12 @@ function displayMatches(matches) {
           <div class="stat-label">Unread</div>
         </div>
         <div class="stat">
-          <div class="stat-number">Chat</div>
-          <div class="stat-label">Available</div>
+          <div class="stat-number">💬</div>
+          <div class="stat-label">Chat</div>
         </div>
         <div class="stat">
-          <div class="stat-number">Match</div>
-          <div class="stat-label">Connected</div>
+          <div class="stat-number">💕</div>
+          <div class="stat-label">Matched</div>
         </div>
       </div>
       <p style="text-align: center; color: #667eea; font-weight: bold; margin: 10px 0 0 0;">
