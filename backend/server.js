@@ -21,9 +21,8 @@ const messageRoutes = require("./routes/messages");
 const app = express();
 
 // ✅ CORS setup
-const cors = require("cors");
 app.use(cors({
-  origin: "https://takeyours.onrender.com", // your frontend domain
+  origin: "*", // your frontend domain
   methods: "GET,POST,PUT,DELETE",
   allowedHeaders: "Content-Type,Authorization"
 }));
