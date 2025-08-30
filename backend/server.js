@@ -21,11 +21,13 @@ const messageRoutes = require("./routes/messages");
 const app = express();
 
 // ✅ CORS setup
+const cors = require("cors");
 app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: "https://takeyours.onrender.com", // your frontend domain
+  methods: "GET,POST,PUT,DELETE",
+  allowedHeaders: "Content-Type,Authorization"
 }));
+
 
 // ✅ Handle large requests (videos + images)
 app.use(express.json({ limit: "200mb" }));

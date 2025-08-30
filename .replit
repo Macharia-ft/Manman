@@ -1,11 +1,11 @@
 modules = ["nodejs-20", "web"]
-run = "node backend/db/backend/db/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/frontend/index.html"
+run = "node backend/db/backend/db/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/frontend/backend/server.js"
 
 [nix]
 channel = "stable-25_05"
 
 [deployment]
-run = ["sh", "-c", "node backend/db/backend/db/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/frontend/index.html"]
+run = ["sh", "-c", "node backend/db/backend/db/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/backend/frontend/backend/server.js"]
 deploymentTarget = "autoscale"
 
 [workflows]
